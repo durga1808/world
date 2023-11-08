@@ -2,7 +2,6 @@ package com.graphql.controller;
 
 import java.util.List;
 
-import org.eclipse.microprofile.graphql.Mutation;
 import org.eclipse.microprofile.graphql.Query;
 
 
@@ -12,7 +11,7 @@ import com.graphql.repo.LogQueryRepo;
 
 import jakarta.inject.Inject;
 
-public class Logcontroller{
+public class LogQuerycontroller{
     
  @Inject
  LogQueryHandler logQueryHandler;
