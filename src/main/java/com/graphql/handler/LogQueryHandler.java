@@ -25,10 +25,6 @@ public class LogQueryHandler {
 
 
 
-    public void addProductDetails(LogDTO logDTO) {
-     logQueryRepo.persist(logDTO);
-    
-    }
 
 
 
