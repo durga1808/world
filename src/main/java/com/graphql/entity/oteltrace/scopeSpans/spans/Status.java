@@ -1,5 +1,5 @@
-package com.graphql.entity.oteltrace.scopeSpans.spans;
+// package com.graphql.entity.oteltrace.scopeSpans.spans;
 
-public class Status {
+// public class Status {
     
-}
+// }
