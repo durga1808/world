@@ -31,8 +31,5 @@ public class LogQueryHandler {
 
 
 
-    // public List<ProductDetails> getAllProductDetails() {
-    //     List<ProductDetails> allProducts = productRepo.listAll();
-    //     return allProducts;
-    // }
+   
 }
