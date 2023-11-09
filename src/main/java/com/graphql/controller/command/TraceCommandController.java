@@ -3,7 +3,7 @@ package com.graphql.controller.command;
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Mutation;
 
-import com.graphql.entity.oteltrace.OtelTrace;
+import com.graphql.entity.queryentity.trace.TraceDTO;
 import com.graphql.handler.command.TraceCommandHandler;
 import com.graphql.repo.command.TraceCommandRepo;
 
@@ -18,9 +18,9 @@ public class TraceCommandController {
     TraceCommandHandler traceCommandHandler;
 
     @Mutation
-    public OtelTrace createTrace(OtelTrace otelTrace) {
-        OtelTrace trace = new OtelTrace();
-        traceCommandHandler.addTraceData(otelTrace);
+    public TraceDTO createTrace(TraceDTO traceDTO) {
+        TraceDTO trace = new TraceDTO();
+        traceCommandHandler.addTraceData(traceDTO);
         return trace;
     }
 }
