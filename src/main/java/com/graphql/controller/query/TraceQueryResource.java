@@ -20,9 +20,9 @@ public class TraceQueryResource {
     @Inject
     TraceQueryHandler traceQueryHandler;
 
-    // @Query("getAllTrace")
-    // public List<OtelTrace> getAllTraces() {
-    //     return traceQueryHandler.getAllTraceData();
-    // }
+    @Query("getAllTrace")
+    public List<OtelTrace> getAllTraces() {
+        return traceQueryHandler.getAllTraceData();
+    }
 }
 

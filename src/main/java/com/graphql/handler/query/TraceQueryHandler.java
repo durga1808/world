@@ -14,10 +14,10 @@ public class TraceQueryHandler {
     @Inject
     TraceQueryRepo traceQueryRepo;
 
-    // List<OtelTrace> otelTrace = new ArrayList<>();
+    List<OtelTrace> otelTrace = new ArrayList<>();
 
-    // public List<OtelTrace> getAllTraceData() {
-    //     List<OtelTrace> allTraces = traceQueryRepo.listAll();
-    //     return allTraces;
-    // }
+    public List<OtelTrace> getAllTraceData() {
+        List<OtelTrace> allTraces = traceQueryRepo.listAll();
+        return allTraces;
+    }
 }

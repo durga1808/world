@@ -1,6 +1,6 @@
 package com.graphql.entity.oteltrace.resource;
 
-import com.graphql.entity.otellog.resource.attributes.Value;
+import com.graphql.entity.oteltrace.resource.attributes.Value;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

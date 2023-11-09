@@ -1,4 +1,4 @@
-package com.graphql.entity.oteltrace.resource.attributes;
+package com.graphql.entity.oteltrace.scopeSpans.spans.attributes;
 
 import org.eclipse.microprofile.graphql.Name;
 
@@ -6,12 +6,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-//@Name("ResourceAttributeValue")
+//@Name("ScopeSpansAttributeValue")
 public class Value {
+    private String intValue;
     private String stringValue;
-    private Integer intValue;
-    private ArrayValue arrayValue;
 }

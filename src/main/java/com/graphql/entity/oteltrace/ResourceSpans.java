@@ -14,8 +14,6 @@ public class ResourceSpans {
   private Resource resource;
   private List<ScopeSpans> scopeSpans;
   private String schemaUrl;
-
-  
 public Collection<OtelTrace> getAttributes() {
     return null;
 }

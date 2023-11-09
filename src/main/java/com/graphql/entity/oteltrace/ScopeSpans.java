@@ -16,4 +16,3 @@ public class ScopeSpans {
     private Scope scope;
     private List<Spans> spans;
 }
-

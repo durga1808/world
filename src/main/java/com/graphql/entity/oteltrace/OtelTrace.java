@@ -20,4 +20,3 @@ import lombok.NoArgsConstructor;
 public class OtelTrace extends PanacheMongoEntity {
     private List<ResourceSpans> resourceSpans;
 }
-

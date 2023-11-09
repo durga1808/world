@@ -12,4 +12,3 @@ import lombok.NoArgsConstructor;
 public class ArrayValue {
     private List<Value> values;
 }
-
