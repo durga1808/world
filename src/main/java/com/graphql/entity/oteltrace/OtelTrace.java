@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = false)
 @JsonIgnoreProperties("id")
-@MongoEntity(collection="TraceGraphQL",database="OtelTraceGraphQL")
+@MongoEntity(collection="Trace",database="OtelTrace")
 public class OtelTrace extends PanacheMongoEntity {
     private List<ResourceSpans> resourceSpans;
 }
