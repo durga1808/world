@@ -4,7 +4,7 @@ package com.graphql.handler.query;
 
 import java.util.List;
 
-import com.graphql.entity.otellog.OtelLog;
+import com.graphql.entity.queryentity.log.LogDTO;
 import com.graphql.repo.query.LogQueryRepo;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -17,8 +17,8 @@ public class LogQueryHandler {
      LogQueryRepo logQueryRepo;
 
 
-    public List<OtelLog> getAllLogs(){
-        List<OtelLog> logs =logQueryRepo.listAll();
+    public List<LogDTO> getAllLogs(){
+        List<LogDTO> logs =logQueryRepo.listAll();
         return logs;
     }
    

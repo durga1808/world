@@ -3,7 +3,7 @@ package com.graphql.controller.command;
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Mutation;
 
-import com.graphql.entity.otellog.OtelLog;
+import com.graphql.entity.queryentity.log.LogDTO;
 import com.graphql.handler.command.LogCommandHandler;
 import com.graphql.repo.command.LogCommandRepo;
 
@@ -18,9 +18,9 @@ public class LogcommandController {
  LogCommandRepo logCommandRepo;
 
    @Mutation
-   public OtelLog createProduct(OtelLog otelLog){
-    OtelLog log =new OtelLog();
-     logCommandHandler.addProductDetails(otelLog);
+   public LogDTO createProduct(LogDTO logDTO){
+    LogDTO log =new LogDTO();
+     logCommandHandler.addProductDetails(logDTO);
         return log;
    }
 }

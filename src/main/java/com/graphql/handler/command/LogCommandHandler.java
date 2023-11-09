@@ -1,6 +1,7 @@
 package com.graphql.handler.command;
 
-import com.graphql.entity.otellog.OtelLog;
+
+import com.graphql.entity.queryentity.log.LogDTO;
 import com.graphql.repo.command.LogCommandRepo;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -12,8 +13,8 @@ public class LogCommandHandler {
    LogCommandRepo logCommandRepo;
 
 
-    public void addProductDetails(OtelLog otelLog) {
-     logCommandRepo.persist(otelLog);
+    public void addProductDetails(LogDTO logDTO) {
+     logCommandRepo.persist(logDTO);
     
     }
 }
