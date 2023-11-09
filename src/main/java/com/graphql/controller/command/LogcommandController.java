@@ -1,11 +1,11 @@
-package com.graphql.controller;
+package com.graphql.controller.command;
 
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Mutation;
 
 import com.graphql.entity.otellog.OtelLog;
-import com.graphql.handler.LogCommandHandler;
-import com.graphql.repo.LogCommandRepo;
+import com.graphql.handler.command.LogCommandHandler;
+import com.graphql.repo.command.LogCommandRepo;
 
 import jakarta.inject.Inject;
 @GraphQLApi

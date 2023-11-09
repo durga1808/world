@@ -1,4 +1,4 @@
-package com.graphql.controller;
+package com.graphql.controller.query;
 
 import java.util.List;
 
@@ -6,8 +6,8 @@ import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Query;
 
 import com.graphql.entity.otellog.OtelLog;
-import com.graphql.handler.LogQueryHandler;
-import com.graphql.repo.LogQueryRepo;
+import com.graphql.handler.query.LogQueryHandler;
+import com.graphql.repo.query.LogQueryRepo;
 
 import jakarta.inject.Inject;
 @GraphQLApi

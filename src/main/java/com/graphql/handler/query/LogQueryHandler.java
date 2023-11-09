@@ -1,12 +1,11 @@
-package com.graphql.handler;
+package com.graphql.handler.query;
 
 
 
 import java.util.List;
 
 import com.graphql.entity.otellog.OtelLog;
-
-import com.graphql.repo.LogQueryRepo;
+import com.graphql.repo.query.LogQueryRepo;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
