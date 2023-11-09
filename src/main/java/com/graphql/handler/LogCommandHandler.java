@@ -1,9 +1,9 @@
 package com.graphql.handler;
 
 import com.graphql.entity.otellog.OtelLog;
-import com.graphql.entity.queryentity.log.LogDTO;
+
 import com.graphql.repo.LogCommandRepo;
-import com.graphql.repo.LogQueryRepo;
+
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
