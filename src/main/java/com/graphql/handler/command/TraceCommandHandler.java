@@ -1,5 +1,6 @@
 package com.graphql.handler.command;
 
+import com.graphql.entity.oteltrace.OtelTrace;
 import com.graphql.repo.command.TraceCommandRepo;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -9,4 +10,8 @@ import jakarta.inject.Inject;
 public class TraceCommandHandler {
     @Inject
     TraceCommandRepo traceCommandRepo;
+
+    public void addTraceData(OtelTrace otelTrace){
+        traceCommandRepo.persist(otelTrace);
+    }
 }

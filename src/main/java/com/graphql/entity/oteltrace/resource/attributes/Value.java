@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-//@Name("ResourceAttributeValue")
+@Name("ValueTraceInput")
 public class Value {
     private String stringValue;
     private Integer intValue;
