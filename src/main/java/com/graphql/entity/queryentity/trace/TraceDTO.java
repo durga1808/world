@@ -30,19 +30,3 @@ public class TraceDTO extends PanacheMongoEntity{
     private Date createdTime;
     private List<Spans> spans;
 }
-
-
-
-
-
-
-   
-
-
-
-
-
-
-
-    
-
