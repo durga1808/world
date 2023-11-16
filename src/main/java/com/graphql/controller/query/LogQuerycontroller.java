@@ -31,7 +31,7 @@ public class LogQuerycontroller{
    
    public List<OtelLog> getLogsForService(@Name("serviceName") String serviceName) {
     // Call the repository method to perform the search
-    return logQueryRepo.findByServiceName( serviceName);
+    return logQueryRepo.findByServiceName(serviceName);
 }
 
   }
