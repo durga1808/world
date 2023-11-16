@@ -22,7 +22,7 @@ public class Spans {
     private String startTimeUnixNano;
     private String endTimeUnixNano;
     private List<Attributes> attributes;
-    // private Map<String, Object> status;
-    // @JsonIgnore
+    private Status status;
+    @JsonIgnore
     private List<Event> events;
 }
