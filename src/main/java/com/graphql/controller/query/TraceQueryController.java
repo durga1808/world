@@ -10,6 +10,7 @@ import com.graphql.handler.query.TraceQueryHandler;
 import com.graphql.repo.query.TraceQueryRepo;
 
 import jakarta.inject.Inject;
+import jakarta.ws.rs.PathParam;
 
 
 @GraphQLApi
@@ -23,6 +24,11 @@ public class TraceQueryController {
     @Query("getAllTraceData")
     public List<TraceDTO> getAllTraces() {
         return traceQueryHandler.getAllTraceData();
+    }
+
+    @Query
+      public List<TraceDTO> getByServiceName(@PathParam("serviceName") String serviceName) {
+       return traceQueryHandler.getByServiceName(serviceName);
     }
 }
 

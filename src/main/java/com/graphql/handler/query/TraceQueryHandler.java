@@ -1,5 +1,6 @@
 package com.graphql.handler.query;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,5 +20,11 @@ public class TraceQueryHandler {
     public List<TraceDTO> getAllTraceData() {
         List<TraceDTO> allTraces = traceQueryRepo.listAll();
         return allTraces;
+    }
+
+
+
+    public List<TraceDTO> getByServiceName(String serviceName) {
+        return traceQueryRepo.findByServiceName(serviceName);
     }
 }
