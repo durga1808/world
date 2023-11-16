@@ -1,4 +1,4 @@
-package com.graphql.entity.otellog.resource.attributes;
+package com.graphql.entity.otelmetric.resource.attributes;
 
 
 import org.eclipse.microprofile.graphql.Name;
@@ -10,9 +10,9 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Name("ValueLogInput")
+@Name("ResourceValue")
 public class Value {
-    private String stringValue;
+     private String stringValue;
     private int intValue;
     private ArrayValue arrayValue;
 }

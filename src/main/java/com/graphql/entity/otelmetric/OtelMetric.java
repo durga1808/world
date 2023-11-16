@@ -1,4 +1,4 @@
-package com.graphql.entity.otellog;
+package com.graphql.entity.otelmetric;
 
 import java.util.List;
 
@@ -10,13 +10,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = false)
 @JsonIgnoreProperties("id")
-@MongoEntity(collection = "Logs", database = "OtelLog")
-public class OtelLog extends PanacheMongoEntity{
-    private List<ResourceLogs> resourceLogs;
+@MongoEntity(collection = "Metrics", database = "OtelMetric")
+public class OtelMetric extends PanacheMongoEntity{
+    private List<ResourceMetric> resourceMetrics;
+ 
 }

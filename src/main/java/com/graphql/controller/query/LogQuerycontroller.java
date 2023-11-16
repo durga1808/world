@@ -5,7 +5,8 @@ import java.util.List;
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Query;
 
-import com.graphql.entity.queryentity.log.LogDTO;
+import com.graphql.entity.otellog.OtelLog;
+
 import com.graphql.handler.query.LogQueryHandler;
 import com.graphql.repo.query.LogQueryRepo;
 
@@ -23,7 +24,7 @@ public class LogQuerycontroller{
 
 
    @Query("getAllLogsData")
-   public List<LogDTO> getAllLogData(){
+   public List<OtelLog> getAllLogData(){
        return logQueryHandler.getAllLogs();
    }
 

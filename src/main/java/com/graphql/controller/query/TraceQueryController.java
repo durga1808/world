@@ -20,7 +20,7 @@ public class TraceQueryController {
     @Inject
     TraceQueryHandler traceQueryHandler;
 
-    @Query("getAllTrace")
+    @Query("getAllTraceData")
     public List<TraceDTO> getAllTraces() {
         return traceQueryHandler.getAllTraceData();
     }

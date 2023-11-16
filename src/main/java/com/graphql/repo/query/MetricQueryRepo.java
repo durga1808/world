@@ -1,14 +1,10 @@
 package com.graphql.repo.query;
 
-import com.graphql.entity.otellog.OtelLog;
-
+import com.graphql.entity.otelmetric.OtelMetric;
 
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-
-
-
 @ApplicationScoped
-public class LogQueryRepo implements PanacheMongoRepository<OtelLog> {
+public class MetricQueryRepo  implements PanacheMongoRepository<OtelMetric>{
     
 }
