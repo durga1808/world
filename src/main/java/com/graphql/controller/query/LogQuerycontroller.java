@@ -3,6 +3,7 @@ package com.graphql.controller.query;
 import java.util.List;
 
 import org.eclipse.microprofile.graphql.GraphQLApi;
+import org.eclipse.microprofile.graphql.Name;
 import org.eclipse.microprofile.graphql.Query;
 
 import com.graphql.entity.otellog.OtelLog;
@@ -27,7 +28,11 @@ public class LogQuerycontroller{
    public List<OtelLog> getAllLogData(){
        return logQueryHandler.getAllLogs();
    }
-
+   
+   public List<OtelLog> getLogsForService(@Name("serviceName") String serviceName) {
+    // Call the repository method to perform the search
+    return logQueryRepo.findByServiceName( serviceName);
+}
 
   }
   
