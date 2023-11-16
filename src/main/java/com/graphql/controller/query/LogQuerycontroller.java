@@ -6,12 +6,13 @@ import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Name;
 import org.eclipse.microprofile.graphql.Query;
 
-import com.graphql.entity.otellog.OtelLog;
 
+import com.graphql.entity.queryentity.log.LogDTO;
 import com.graphql.handler.query.LogQueryHandler;
 import com.graphql.repo.query.LogQueryRepo;
 
 import jakarta.inject.Inject;
+import jakarta.ws.rs.PathParam;
 @GraphQLApi
 public class LogQuerycontroller{
     
@@ -25,13 +26,14 @@ public class LogQuerycontroller{
 
 
    @Query("getAllLogsData")
-   public List<OtelLog> getAllLogData(){
+   public List<LogDTO> getAllLogData(){
        return logQueryHandler.getAllLogs();
    }
    
-   public List<OtelLog> getLogsForService(@Name("serviceName") String serviceName) {
+   @Query
+   public List<LogDTO> getlogByServiceName(@Name("serviceName") String serviceName) {
     // Call the repository method to perform the search
-    return logQueryRepo.findByServiceName(serviceName);
+    return logQueryHandler.getlogByServiceName(serviceName);
 }
 
   }
