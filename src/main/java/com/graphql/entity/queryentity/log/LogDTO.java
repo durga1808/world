@@ -1,5 +1,7 @@
 package com.graphql.entity.queryentity.log;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -21,4 +23,6 @@ public class LogDTO {
     private Date createdTime;
     private String severityText;
     private List<ScopeLogs> scopeLogs;
+    
+   
   }
