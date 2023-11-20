@@ -3,6 +3,7 @@ package com.graphql.controller.query;
 import java.util.List;
 
 import org.eclipse.microprofile.graphql.GraphQLApi;
+import org.eclipse.microprofile.graphql.Name;
 import org.eclipse.microprofile.graphql.Query;
 
 import com.graphql.entity.queryentity.trace.TraceDTO;
@@ -27,8 +28,13 @@ public class TraceQueryController {
     }
 
     @Query
-      public List<TraceDTO> getByServiceName(@PathParam("serviceName") String serviceName) {
+      public List<TraceDTO> getByServiceName(@Name("serviceName") String serviceName) {
        return traceQueryHandler.getByServiceName(serviceName);
+    }
+
+    @Query
+    public List<TraceDTO> getTracesByStatusCodeRange(@Name("minStatusCode") Integer minStatusCode,@Name("maxStatusCode") Integer maxStatusCode) {
+        return traceQueryHandler.getTracesByStatusCodeRange(minStatusCode, maxStatusCode);
     }
 }
 
