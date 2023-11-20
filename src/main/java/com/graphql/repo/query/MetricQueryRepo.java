@@ -7,4 +7,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 @ApplicationScoped
 public class MetricQueryRepo  implements PanacheMongoRepository<OtelMetric>{
     
+
+
+
+    
 }
