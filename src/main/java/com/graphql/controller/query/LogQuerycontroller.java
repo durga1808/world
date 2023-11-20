@@ -3,7 +3,6 @@ package com.graphql.controller.query;
 
 import java.time.LocalDate;
 
-
 import java.util.List;
 
 
@@ -13,13 +12,15 @@ import org.eclipse.microprofile.graphql.Query;
 
 
 import com.graphql.entity.queryentity.log.LogDTO;
-
+import com.graphql.entity.queryentity.log.LogMetrics;
 import com.graphql.handler.query.LogQueryHandler;
 import com.graphql.repo.query.LogQueryRepo;
 
 import jakarta.inject.Inject;
-
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
+
 
 @GraphQLApi
 public class LogQuerycontroller{
@@ -46,7 +47,7 @@ public class LogQuerycontroller{
 
 
    
-//   @Query("logsDateAndTime")
+
   
 // public List<LogDTO> searchLogs(
 //         @QueryParam("startDate") LocalDate from,
@@ -79,20 +80,59 @@ public class LogQuerycontroller{
 //         return logList;
 
 
+//   @Query("logsDateAndTime")
 
-@Query("logsDateAndTime")
+// public List<LogDTO> getLogsDateTime(
+//     @QueryParam("startDate") LocalDate endDate,
+//     @QueryParam("endDate") LocalDate startDate,
+    
+//     @QueryParam("minutesAgo") int minutesAgo
+// ) {
+//     List<LogDTO> logDTOList = logQueryHandler.getLogDTOList(endDate, startDate, minutesAgo);
+//     return logDTOList;
+// }
+   
 
-public List<LogDTO> getLogsDateTime(
+// public List<LogDTO> getByServiceName(
+//         @QueryParam("from") LocalDate from,
+//         @QueryParam("to") LocalDate to,
+//         @QueryParam("serviceName") String serviceName,
+//         @QueryParam("minutesAgo") int minutesAgo
+// ) {
+//     List<LogDTO> logData = logQueryHandler.getLogData(from, to, serviceName, minutesAgo);
+//     return logData;
+// }
+
+
+@Query("logsUsingDateAndTime")
+
+public List<LogDTO> getLogsDateAndTime(
     @QueryParam("startDate") LocalDate endDate,
     @QueryParam("endDate") LocalDate startDate,
     @QueryParam("serviceNameList") List<String> serviceNameList,
     @QueryParam("minutesAgo") int minutesAgo
 ) {
-    List<LogDTO> logDTOList = logQueryHandler.getLogDTOList(serviceNameList, endDate, startDate, minutesAgo);
+    List<LogDTO> logDTOList = logQueryHandler.getLogDTOList(serviceNameList, endDate, startDate, minutesAgo);                //conroller
     return logDTOList;
 }
-   
-      
+
+  
+
+
+
+
+@Query("logsDateAndTime")
+
+public List<LogMetrics> getLogMetricsCount(
+    @QueryParam("startDate") LocalDate endDate,
+    @QueryParam("endDate") LocalDate startDate,
+    @QueryParam("serviceNameList") List<String> serviceNameList,
+    @QueryParam("minutesAgo") int minutesAgo
+) {
+    return logQueryHandler.getLogMetricCount(serviceNameList, endDate, startDate, minutesAgo);
+}
+
+
     
 }
 

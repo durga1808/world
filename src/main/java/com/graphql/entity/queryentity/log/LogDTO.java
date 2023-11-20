@@ -7,6 +7,7 @@ import java.util.List;
 
 import com.graphql.entity.otellog.ScopeLogs;
 
+
 import io.quarkus.mongodb.panache.common.MongoEntity;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -23,6 +24,14 @@ public class LogDTO {
     private Date createdTime;
     private String severityText;
     private List<ScopeLogs> scopeLogs;
+  
+    
+   
+   
+   
+    
+    
+    
     
    
   }
