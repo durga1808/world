@@ -59,8 +59,8 @@ public class LogQueryHandler {
 
 
     public List<LogDTO> getAllLogs(){
-        List<LogDTO> logs =logQueryRepo.listAll();
-        return logs;
+        List<LogDTO> loglList =logQueryRepo.listAll();
+        return loglList;
     }
    
     public List<LogDTO> getlogByServiceName(String serviceName) {
@@ -587,7 +587,7 @@ public class LogQueryHandler {
 //     }
 // }
 
-public List<LogDTO> searchLogByDate(LogQuery logQuery, LocalDate from, LocalDate to) {
+public List<LogDTO> searchLogsPaged(LogQuery logQuery, LocalDate from, LocalDate to) {
     List<String> serviceNames = logQuery.getServiceName();
     List<String> severityTexts = logQuery.getSeverityText();
     

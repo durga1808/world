@@ -147,7 +147,7 @@ public class LogQuerycontroller{
     LocalDate to
     //int minutesAgo
   ) {
-    return logQueryHandler.searchLogByDate(logQuery, from, to);
+    return logQueryHandler.searchLogsPaged(logQuery, from, to);
     
   }
 
