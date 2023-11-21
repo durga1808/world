@@ -13,6 +13,8 @@ import org.eclipse.microprofile.graphql.Query;
 
 import com.graphql.entity.queryentity.log.LogDTO;
 import com.graphql.entity.queryentity.log.LogMetrics;
+import com.graphql.entity.queryentity.trace.TraceDTO;
+import com.graphql.entity.queryentity.trace.TraceQuery;
 import com.graphql.handler.query.LogQueryHandler;
 import com.graphql.repo.query.LogQueryRepo;
 
@@ -132,6 +134,21 @@ public List<LogMetrics> getLogMetricsCount(
     return logQueryHandler.getLogMetricCount(serviceNameList, endDate, startDate, minutesAgo);
 }
 
+
+
+
+@Query("searchLogPaged")
+  public List<LogDTO> searchLogsPaged(
+    
+    int page,
+    int pageSize,
+    LocalDate from,
+    LocalDate to
+    //int minutesAgo
+  ) {
+    return logQueryHandler.searchLogsPaged( page, pageSize, from, to);
+    
+  }
 
     
 }

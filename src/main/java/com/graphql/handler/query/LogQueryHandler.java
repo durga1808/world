@@ -24,12 +24,16 @@ import com.graphql.entity.otellog.scopeLogs.logRecord.Body;
 import com.graphql.entity.queryentity.log.LogDTO;
 import com.graphql.entity.queryentity.log.LogMetrics;
 import com.graphql.entity.queryentity.trace.TraceDTO;
+import com.graphql.entity.queryentity.trace.TraceQuery;
 import com.graphql.repo.query.LogQueryRepo;
+import com.mongodb.BasicDBObject;
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 
+import io.quarkus.mongodb.panache.PanacheMongoEntityBase;
 import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.panache.common.Parameters;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -38,7 +42,11 @@ import jakarta.inject.Inject;
 
 @ApplicationScoped
 public class LogQueryHandler {
-     @Inject
+     
+
+
+
+    @Inject
      LogQueryRepo logQueryRepo;
 
 
@@ -575,7 +583,55 @@ private void calculateCallCounts(LogDTO logDTO, LogMetrics metrics) {
         }
     }
 }
+public List<LogDTO> searchLogsPaged(int page, int pageSize, LocalDate from, LocalDate to) {
+    System.out.println("from Date --------------" + from);
+    System.out.println("to Date --------------" + to);
 
+    // Swap 'from' and 'to' if 'to' is earlier than 'from'
+    if (from != null && to != null && to.isBefore(from)) {
+        LocalDate temp = from;
+        from = to;
+        to = temp;
+    }
+
+    FindIterable<Document> result = getFilteredResults( page, pageSize, from, to);
+
+    List<LogDTO> logDTOList = new ArrayList<>();
+    try (MongoCursor<Document> cursor = result.iterator()) {
+        while (cursor.hasNext()) {
+            Document document = cursor.next();
+            LogDTO logDTO = new LogDTO();
+            
+            logDTO.setTraceId(document.getString("traceId"));
+            logDTO.setServiceName(document.getString("serviceName"));
+            logDTO.setCreatedTime(document.getDate("createdTime"));
+            // Set other fields accordingly based on your document structure
+            // ...
+
+            logDTOList.add(logDTO);
+        }
+    }
+
+    return logDTOList;
+}
+
+private FindIterable<Document> getFilteredResults(int page, int pageSize, LocalDate from, LocalDate to) {
+    return null;
+}
+
+public long countQueryLogs(LocalDate from, LocalDate to) {
+    // Swap 'from' and 'to' if 'to' is earlier than 'from'
+    if (from != null && to != null && to.isBefore(from)) {
+        LocalDate temp = from;
+        from = to;
+        to = temp;
+    }
+
+    FindIterable<Document> result = getFilteredResults( 0, Integer.MAX_VALUE, from, to);
+    System.out.println("countQueryLogs: " + result.into(new ArrayList<>()).size());
+    long totalCount = result.into(new ArrayList<>()).size();
+    return totalCount;
+}
 
 
 
