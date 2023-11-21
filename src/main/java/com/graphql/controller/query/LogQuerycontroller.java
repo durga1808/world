@@ -13,6 +13,7 @@ import org.eclipse.microprofile.graphql.Query;
 
 import com.graphql.entity.queryentity.log.LogDTO;
 import com.graphql.entity.queryentity.log.LogMetrics;
+import com.graphql.entity.queryentity.log.LogQuery;
 import com.graphql.entity.queryentity.trace.TraceDTO;
 import com.graphql.entity.queryentity.trace.TraceQuery;
 import com.graphql.handler.query.LogQueryHandler;
@@ -106,47 +107,47 @@ public class LogQuerycontroller{
 // }
 
 
-@Query("logsUsingDateAndTime")
+// @Query("logsUsingDateAndTime")
 
-public List<LogDTO> getLogsDateAndTime(
-    @QueryParam("startDate") LocalDate endDate,
-    @QueryParam("endDate") LocalDate startDate,
-    @QueryParam("serviceNameList") List<String> serviceNameList,
-    @QueryParam("minutesAgo") int minutesAgo
-) {
-    List<LogDTO> logDTOList = logQueryHandler.getLogDTOList(serviceNameList, endDate, startDate, minutesAgo);                //conroller
-    return logDTOList;
-}
+// public List<LogDTO> getLogsDateAndTime(
+//     @QueryParam("startDate") LocalDate endDate,
+//     @QueryParam("endDate") LocalDate startDate,
+//     @QueryParam("serviceNameList") List<String> serviceNameList,
+//     @QueryParam("minutesAgo") int minutesAgo
+// ) {
+//     List<LogDTO> logDTOList = logQueryHandler.getLogDTOList(serviceNameList, endDate, startDate, minutesAgo);                //conroller
+//     return logDTOList;
+// }
 
   
 
 
 
 
-@Query("logsDateAndTime")
+// @Query("logsDateAndTime")
 
-public List<LogMetrics> getLogMetricsCount(
-    @QueryParam("startDate") LocalDate endDate,
-    @QueryParam("endDate") LocalDate startDate,
-    @QueryParam("serviceNameList") List<String> serviceNameList,
-    @QueryParam("minutesAgo") int minutesAgo
-) {
-    return logQueryHandler.getLogMetricCount(serviceNameList, endDate, startDate, minutesAgo);
-}
+// public List<LogMetrics> getLogMetricsCount(
+//     @QueryParam("startDate") LocalDate endDate,
+//     @QueryParam("endDate") LocalDate startDate,
+//     @QueryParam("serviceNameList") List<String> serviceNameList,
+//     @QueryParam("minutesAgo") int minutesAgo
+// ) {
+//     return logQueryHandler.getLogMetricCount(serviceNameList, endDate, startDate, minutesAgo);
+// }
 
 
 
 
 @Query("searchLogPaged")
   public List<LogDTO> searchLogsPaged(
-    
+    LogQuery logQuery,
     int page,
     int pageSize,
     LocalDate from,
     LocalDate to
     //int minutesAgo
   ) {
-    return logQueryHandler.searchLogsPaged( page, pageSize, from, to);
+    return logQueryHandler.searchLogByDate(logQuery, from, to);
     
   }
 

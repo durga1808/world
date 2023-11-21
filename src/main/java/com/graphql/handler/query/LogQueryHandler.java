@@ -9,10 +9,12 @@ import java.time.ZoneId;
 
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -23,6 +25,7 @@ import com.graphql.entity.otellog.scopeLogs.Scope;
 import com.graphql.entity.otellog.scopeLogs.logRecord.Body;
 import com.graphql.entity.queryentity.log.LogDTO;
 import com.graphql.entity.queryentity.log.LogMetrics;
+import com.graphql.entity.queryentity.log.LogQuery;
 import com.graphql.entity.queryentity.trace.TraceDTO;
 import com.graphql.entity.queryentity.trace.TraceQuery;
 import com.graphql.repo.query.LogQueryRepo;
@@ -430,16 +433,168 @@ public class LogQueryHandler {
 
 
 
-public List<LogDTO> getLogDTOList(List<String> serviceNameList, LocalDate from, LocalDate to, int minutesAgo) {
-    System.out.println("from: " + from);
-    System.out.println("to: " + to);
-    System.out.println("minutesAgo: " + minutesAgo);
+// public List<LogDTO> getLogDTOList(List<String> serviceNameList, LocalDate from, LocalDate to, int minutesAgo) {
+//     System.out.println("from: " + from);
+//     System.out.println("to: " + to);
+//     System.out.println("minutesAgo: " + minutesAgo);
 
+//     List<LogDTO> logList = logQueryRepo.listAll();
+//     Map<String, LogDTO> logDTOMap = new HashMap<>();
+
+//     Instant fromInstant = null;
+//     Instant toInstant = null;
+
+//     if (from != null && to != null) {
+//         Instant startOfFrom = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
+//         Instant startOfTo = to.atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+//         fromInstant = startOfFrom.isBefore(startOfTo) ? startOfFrom : startOfTo;
+//         toInstant = startOfFrom.isBefore(startOfTo) ? startOfTo : startOfFrom;
+
+//         toInstant = toInstant.plus(1, ChronoUnit.DAYS);
+//     } else if (minutesAgo > 0) {
+//         Instant currentInstant = Instant.now();
+//         Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+
+//         Instant startOfCurrentDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+//         if (minutesAgoInstant.isBefore(startOfCurrentDay)) {
+//             fromInstant = startOfCurrentDay;
+//         } else {
+//             fromInstant = minutesAgoInstant;
+//         }
+
+//         toInstant = currentInstant;
+//     } else {
+//         throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
+//     }
+
+//     for (LogDTO logDTO : logList) {
+//         Date logCreateTime = logDTO.getCreatedTime();
+//         if (logCreateTime != null) {
+//             Instant logInstant = logCreateTime.toInstant();
+
+//             if (logInstant.isAfter(fromInstant) && logInstant.isBefore(toInstant)
+//                     && serviceNameList.contains(logDTO.getServiceName())) {
+//                 String serviceName = logDTO.getServiceName();
+//                 LogDTO logInMap = logDTOMap.get(serviceName);
+
+//                 if (logInMap == null) {
+//                     logDTOMap.put(serviceName, logDTO);
+//                 } else {
+//                     calculateCallCounts(logDTO, logInMap);
+//                 }
+//             }
+//         }
+//     }
+
+//     return new ArrayList<>(logDTOMap.values());
+// }
+
+// private void calculateCallCounts(LogDTO sourceLogDTO, LogDTO targetLogDTO) {
+//     // Adjust the logic to accumulate call counts in the targetLogDTO
+//     // based on the sourceLogDTO's call counts
+
+//     for (ScopeLogs scopeLogs : sourceLogDTO.getScopeLogs()) {
+//         for (LogRecord logRecord : scopeLogs.getLogRecords()) {
+//             String severityText = logRecord.getSeverityText();
+//             // Adjust the logic to accumulate call counts in targetLogDTO
+//             // based on the severityText
+//         }
+//     }
+// }
+
+
+
+
+// public List<LogMetrics> getLogMetricCount(List<String> serviceNameList, LocalDate from, LocalDate to, int minutesAgo) {
+//     System.out.println("from: " + from);
+//     System.out.println("to: " + to);
+//     System.out.println("minutesAgo: " + minutesAgo);
+
+//     List<LogDTO> logList = logQueryRepo.listAll();
+//     Map<String, LogMetrics> metricsMap = new HashMap<>();
+
+//     Instant fromInstant = null;
+//     Instant toInstant = null;
+
+//     if (from != null && to != null) {
+//         Instant startOfFrom = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
+//         Instant startOfTo = to.atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+//         fromInstant = startOfFrom.isBefore(startOfTo) ? startOfFrom : startOfTo;
+//         toInstant = startOfFrom.isBefore(startOfTo) ? startOfTo : startOfFrom;
+
+//         toInstant = toInstant.plus(1, ChronoUnit.DAYS);
+//     } else if (minutesAgo > 0) {
+//         Instant currentInstant = Instant.now();
+//         Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+
+//         Instant startOfCurrentDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+//         if (minutesAgoInstant.isBefore(startOfCurrentDay)) {
+//             fromInstant = startOfCurrentDay;
+//         } else {
+//             fromInstant = minutesAgoInstant;
+//         }
+
+//         toInstant = currentInstant;
+//     } else {
+//         throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
+//     }
+
+//     for (LogDTO logDTO : logList) {
+//         Date logCreateTime = logDTO.getCreatedTime();
+//         if (logCreateTime != null) {
+//             Instant logInstant = logCreateTime.toInstant();
+
+//             if (logInstant.isAfter(fromInstant) && logInstant.isBefore(toInstant)
+//                     && serviceNameList.contains(logDTO.getServiceName())) {
+//                 String serviceName = logDTO.getServiceName();
+//                 LogMetrics metrics = metricsMap.get(serviceName);
+
+//                 if (metrics == null) {
+//                     metrics = new LogMetrics();
+//                     metrics.setServiceName(serviceName);
+//                     metrics.setErrorCallCount(0L);
+//                     metrics.setWarnCallCount(0L);
+//                     metrics.setDebugCallCount(0L);
+//                     metricsMap.put(serviceName, metrics);
+//                 }
+
+//                 calculateCallCounts(logDTO, metrics);
+//             }
+//         }
+//     }
+
+//     return new ArrayList<>(metricsMap.values());
+// }
+
+
+
+// private void calculateCallCounts(LogDTO logDTO, LogMetrics metrics) {
+//     for (ScopeLogs scopeLogs : logDTO.getScopeLogs()) {
+//         for (LogRecord logRecord : scopeLogs.getLogRecords()) {
+//             String severityText = logRecord.getSeverityText(); 
+//             if ("ERROR".equals(severityText) || "SEVERE".equals(severityText)) {
+//                 metrics.setErrorCallCount(metrics.getErrorCallCount() + 1);
+//             } else if ("WARN".equals(severityText)) {
+//                 metrics.setWarnCallCount(metrics.getWarnCallCount() + 1);
+//             } else if ("DEBUG".equals(severityText)) {
+//                 metrics.setDebugCallCount(metrics.getDebugCallCount() + 1);
+//             }
+//         }
+//     }
+// }
+
+public List<LogDTO> searchLogByDate(LogQuery logQuery, LocalDate from, LocalDate to) {
+    List<String> serviceNames = logQuery.getServiceName();
+    List<String> severityTexts = logQuery.getSeverityText();
+    
     List<LogDTO> logList = logQueryRepo.listAll();
-    Map<String, LogDTO> logDTOMap = new HashMap<>();
-
-    Instant fromInstant = null;
-    Instant toInstant = null;
+    
+    Instant fromInstant;
+    Instant toInstant;
 
     if (from != null && to != null) {
         Instant startOfFrom = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
@@ -448,191 +603,33 @@ public List<LogDTO> getLogDTOList(List<String> serviceNameList, LocalDate from, 
         fromInstant = startOfFrom.isBefore(startOfTo) ? startOfFrom : startOfTo;
         toInstant = startOfFrom.isBefore(startOfTo) ? startOfTo : startOfFrom;
 
-        toInstant = toInstant.plus(1, ChronoUnit.DAYS);
-    } else if (minutesAgo > 0) {
-        Instant currentInstant = Instant.now();
-        Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+        // Adjusted value to be used within lambda
+        final Instant adjustedToInstant = toInstant.plus(1, ChronoUnit.DAYS);
 
-        Instant startOfCurrentDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
+        // Use adjustedToInstant within the lambda expression
+        List<LogDTO> filteredAndSortedLogs = logList.stream()
+                .filter(logDTO -> (serviceNames == null || serviceNames.isEmpty() || serviceNames.contains(logDTO.getServiceName())) &&
+                        (severityTexts == null || severityTexts.isEmpty() || severityTexts.contains(logDTO.getSeverityText())))
+                .filter(logDTO -> isWithinDateRange(logDTO.getCreatedTime().toInstant(), fromInstant, adjustedToInstant))
+                .collect(Collectors.toList());
 
-        if (minutesAgoInstant.isBefore(startOfCurrentDay)) {
-            fromInstant = startOfCurrentDay;
-        } else {
-            fromInstant = minutesAgoInstant;
-        }
+        filteredAndSortedLogs.sort(Comparator.comparing(LogDTO::getCreatedTime).reversed());
 
-        toInstant = currentInstant;
+        return filteredAndSortedLogs;
     } else {
-        throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
-    }
-
-    for (LogDTO logDTO : logList) {
-        Date logCreateTime = logDTO.getCreatedTime();
-        if (logCreateTime != null) {
-            Instant logInstant = logCreateTime.toInstant();
-
-            if (logInstant.isAfter(fromInstant) && logInstant.isBefore(toInstant)
-                    && serviceNameList.contains(logDTO.getServiceName())) {
-                String serviceName = logDTO.getServiceName();
-                LogDTO logInMap = logDTOMap.get(serviceName);
-
-                if (logInMap == null) {
-                    logDTOMap.put(serviceName, logDTO);
-                } else {
-                    calculateCallCounts(logDTO, logInMap);
-                }
-            }
-        }
-    }
-
-    return new ArrayList<>(logDTOMap.values());
-}
-
-private void calculateCallCounts(LogDTO sourceLogDTO, LogDTO targetLogDTO) {
-    // Adjust the logic to accumulate call counts in the targetLogDTO
-    // based on the sourceLogDTO's call counts
-
-    for (ScopeLogs scopeLogs : sourceLogDTO.getScopeLogs()) {
-        for (LogRecord logRecord : scopeLogs.getLogRecords()) {
-            String severityText = logRecord.getSeverityText();
-            // Adjust the logic to accumulate call counts in targetLogDTO
-            // based on the severityText
-        }
+        throw new IllegalArgumentException("Both from and to dates must be provided");
     }
 }
 
-
-
-
-public List<LogMetrics> getLogMetricCount(List<String> serviceNameList, LocalDate from, LocalDate to, int minutesAgo) {
-    System.out.println("from: " + from);
-    System.out.println("to: " + to);
-    System.out.println("minutesAgo: " + minutesAgo);
-
-    List<LogDTO> logList = logQueryRepo.listAll();
-    Map<String, LogMetrics> metricsMap = new HashMap<>();
-
-    Instant fromInstant = null;
-    Instant toInstant = null;
-
-    if (from != null && to != null) {
-        Instant startOfFrom = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
-        Instant startOfTo = to.atStartOfDay(ZoneId.systemDefault()).toInstant();
-
-        fromInstant = startOfFrom.isBefore(startOfTo) ? startOfFrom : startOfTo;
-        toInstant = startOfFrom.isBefore(startOfTo) ? startOfTo : startOfFrom;
-
-        toInstant = toInstant.plus(1, ChronoUnit.DAYS);
-    } else if (minutesAgo > 0) {
-        Instant currentInstant = Instant.now();
-        Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
-
-        Instant startOfCurrentDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
-
-        if (minutesAgoInstant.isBefore(startOfCurrentDay)) {
-            fromInstant = startOfCurrentDay;
-        } else {
-            fromInstant = minutesAgoInstant;
-        }
-
-        toInstant = currentInstant;
-    } else {
-        throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
-    }
-
-    for (LogDTO logDTO : logList) {
-        Date logCreateTime = logDTO.getCreatedTime();
-        if (logCreateTime != null) {
-            Instant logInstant = logCreateTime.toInstant();
-
-            if (logInstant.isAfter(fromInstant) && logInstant.isBefore(toInstant)
-                    && serviceNameList.contains(logDTO.getServiceName())) {
-                String serviceName = logDTO.getServiceName();
-                LogMetrics metrics = metricsMap.get(serviceName);
-
-                if (metrics == null) {
-                    metrics = new LogMetrics();
-                    metrics.setServiceName(serviceName);
-                    metrics.setErrorCallCount(0L);
-                    metrics.setWarnCallCount(0L);
-                    metrics.setDebugCallCount(0L);
-                    metricsMap.put(serviceName, metrics);
-                }
-
-                calculateCallCounts(logDTO, metrics);
-            }
-        }
-    }
-
-    return new ArrayList<>(metricsMap.values());
+private boolean isWithinDateRange(Instant logTimestamp, Instant from, Instant to) {
+    LocalDateTime logDateTime = logTimestamp.atZone(ZoneId.systemDefault()).toLocalDateTime();
+    
+    return (logDateTime.isEqual(from.atZone(ZoneId.systemDefault()).toLocalDateTime()) || logDateTime.isAfter(from.atZone(ZoneId.systemDefault()).toLocalDateTime())) &&
+            (logDateTime.isEqual(to.atZone(ZoneId.systemDefault()).toLocalDateTime()) || logDateTime.isBefore(to.atZone(ZoneId.systemDefault()).toLocalDateTime()));
 }
 
 
-
-private void calculateCallCounts(LogDTO logDTO, LogMetrics metrics) {
-    for (ScopeLogs scopeLogs : logDTO.getScopeLogs()) {
-        for (LogRecord logRecord : scopeLogs.getLogRecords()) {
-            String severityText = logRecord.getSeverityText(); 
-            if ("ERROR".equals(severityText) || "SEVERE".equals(severityText)) {
-                metrics.setErrorCallCount(metrics.getErrorCallCount() + 1);
-            } else if ("WARN".equals(severityText)) {
-                metrics.setWarnCallCount(metrics.getWarnCallCount() + 1);
-            } else if ("DEBUG".equals(severityText)) {
-                metrics.setDebugCallCount(metrics.getDebugCallCount() + 1);
-            }
-        }
-    }
-}
-public List<LogDTO> searchLogsPaged(int page, int pageSize, LocalDate from, LocalDate to) {
-    System.out.println("from Date --------------" + from);
-    System.out.println("to Date --------------" + to);
-
-    // Swap 'from' and 'to' if 'to' is earlier than 'from'
-    if (from != null && to != null && to.isBefore(from)) {
-        LocalDate temp = from;
-        from = to;
-        to = temp;
-    }
-
-    FindIterable<Document> result = getFilteredResults( page, pageSize, from, to);
-
-    List<LogDTO> logDTOList = new ArrayList<>();
-    try (MongoCursor<Document> cursor = result.iterator()) {
-        while (cursor.hasNext()) {
-            Document document = cursor.next();
-            LogDTO logDTO = new LogDTO();
-            
-            logDTO.setTraceId(document.getString("traceId"));
-            logDTO.setServiceName(document.getString("serviceName"));
-            logDTO.setCreatedTime(document.getDate("createdTime"));
-            // Set other fields accordingly based on your document structure
-            // ...
-
-            logDTOList.add(logDTO);
-        }
-    }
-
-    return logDTOList;
-}
-
-private FindIterable<Document> getFilteredResults(int page, int pageSize, LocalDate from, LocalDate to) {
-    return null;
-}
-
-public long countQueryLogs(LocalDate from, LocalDate to) {
-    // Swap 'from' and 'to' if 'to' is earlier than 'from'
-    if (from != null && to != null && to.isBefore(from)) {
-        LocalDate temp = from;
-        from = to;
-        to = temp;
-    }
-
-    FindIterable<Document> result = getFilteredResults( 0, Integer.MAX_VALUE, from, to);
-    System.out.println("countQueryLogs: " + result.into(new ArrayList<>()).size());
-    long totalCount = result.into(new ArrayList<>()).size();
-    return totalCount;
-}
-
+  
 
 
 }
