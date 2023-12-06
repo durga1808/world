@@ -24,20 +24,20 @@ public class TraceQueryController {
     @Inject
     TraceQueryHandler traceQueryHandler;
 
-    @Query("getAllTraceData")
-    public List<TraceDTO> getAllTraces() {
-        return traceQueryHandler.getAllTraceData();
-    }
+    // @Query("getAllTraceData")
+    // public List<TraceDTO> getAllTraces() {
+    //     return traceQueryHandler.getAllTraceData();
+    // }
 
-    @Query
-      public List<TraceDTO> getByServiceName(@Name("serviceName") String serviceName) {
-       return traceQueryHandler.getByServiceName(serviceName);
-    }
+    // @Query
+    //   public List<TraceDTO> getByServiceName(@Name("serviceName") String serviceName) {
+    //    return traceQueryHandler.getByServiceName(serviceName);
+    // }
 
-    @Query
-    public List<TraceDTO> getTracesByStatusCodeRange(@Name("minStatusCode") Integer minStatusCode,@Name("maxStatusCode") Integer maxStatusCode) {
-        return traceQueryHandler.getTracesByStatusCodeRange(minStatusCode, maxStatusCode);
-    }
+    // @Query
+    // public List<TraceDTO> getTracesByStatusCodeRange(@Name("minStatusCode") Integer minStatusCode,@Name("maxStatusCode") Integer maxStatusCode) {
+    //     return traceQueryHandler.getTracesByStatusCodeRange(minStatusCode, maxStatusCode);
+    // }
 
 
     
@@ -47,10 +47,10 @@ public class TraceQueryController {
     int page,
     int pageSize,
     LocalDate from,
-    LocalDate to
-    //int minutesAgo
+    LocalDate to,
+    Integer minutesAgo
   ) {
-    return traceQueryHandler.searchTracesPaged(query, page, pageSize, from, to);
+    return traceQueryHandler.searchTracesPaged(query, page, pageSize, from, to, minutesAgo);
     
   }
 

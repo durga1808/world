@@ -34,38 +34,22 @@ public class LogQuerycontroller{
 
 
 
-   @Query("getAllLogsData")
-   public List<LogDTO> getAllLogData(){
-       return logQueryHandler.getAllLogs();
-   }
+  //  @Query("getAllLogsData")
+  //  public List<LogDTO> getAllLogData(){
+  //      return logQueryHandler.getAllLogs();
+  //  }
    
-   @Query
-   public List<LogDTO> getlogByServiceName(@Name("serviceName") String serviceName) {
-    // Call the repository method to perform the search
-    return logQueryHandler.getlogByServiceName(serviceName);
-    }
-
-
-   
-
-  
+  //  @Query
+  //  public List<LogDTO> getlogByServiceName(@Name("serviceName") String serviceName) {
+  //   // Call the repository method to perform the search
+  //   return logQueryHandler.getlogByServiceName(serviceName);
+  //   }
 
 
 
 
-// @Query("logsDateAndTime")
 
-// public List<LogMetrics> getLogMetricsCount(
-//     @QueryParam("startDate") LocalDate endDate,
-//     @QueryParam("endDate") LocalDate startDate,
-//     @QueryParam("serviceNameList") List<String> serviceNameList,
-//     @QueryParam("minutesAgo") int minutesAgo
-// ) {
-//     return logQueryHandler.getLogMetricCount(serviceNameList, endDate, startDate, minutesAgo);
-// }
-
-
-
+//Date and time to get the data
 
 @Query("searchLogPaged")
   public List<LogDTO> searchLogsPaged(
@@ -82,6 +66,9 @@ public class LogQuerycontroller{
     return logQueryHandler.searchLogsPaged(logQuery, from, to, minutesAgo);
     
   }
+
+
+  
     
 }
 
