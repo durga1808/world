@@ -19,6 +19,11 @@ import com.graphql.handler.query.LogQueryHandler;
 import com.graphql.repo.query.LogQueryRepo;
 
 import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Response;
 
 
 
@@ -47,26 +52,50 @@ public class LogQuerycontroller{
 
 
 
-
-
-//Date and time to get the data
-
 @Query("searchLogPaged")
-  public List<LogDTO> searchLogsPaged(
-    LogQuery logQuery,
-    int page,
-    int pageSize,
-    LocalDate from,
-    LocalDate to,
-    Integer minutesAgo
-  ) {
+public List<LogDTO> searchLogsPaged(
+        LogQuery logQuery,
+        int page,
+        int pageSize,
+        LocalDate from,
+        LocalDate to,
+        Integer minutesAgo,
+        String sortOrder
+) {
+    List<LogDTO> logs = logQueryHandler.searchLogsPaged(logQuery, from, to, minutesAgo);
+
+    if ("new".equalsIgnoreCase(sortOrder)) {
+      logs = logQueryHandler.getFilterLogsByCreatedTimeDesc(logs);
+  } else if ("old".equalsIgnoreCase(sortOrder)) {
+      logs = logQueryHandler.getFilterLogssAsc(logs);
+  } else if ("error".equalsIgnoreCase(sortOrder)) {
+      logs = logQueryHandler.getFilterErrorLogs(logs);
+  }  else{
+    throw new IllegalArgumentException("Invalid sortOrder parameter. Use 'new', 'old', or 'error'.");
+}
+
+    return logs;
+}
 
 
-    
-    return logQueryHandler.searchLogsPaged(logQuery, from, to, minutesAgo);
-    
-  }
 
+
+//   @POST
+// @Path("/filterLogs")
+// @Consumes("application/json")
+// @Produces("application/json")
+// public Response filterLogs(
+//         LogQuery logQuery,
+//         @QueryParam("page") @DefaultValue("1") int page,
+//         @QueryParam("pageSize") @DefaultValue("10") int pageSize,
+//         @QueryParam("startDate") LocalDate from,
+//         @QueryParam("endDate") LocalDate to,
+//         @QueryParam("minutesAgo") int minutesAgo,
+//         @QueryParam("sortOrder") String sortOrder) {
+
+
+
+//         }
 
   
     

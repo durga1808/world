@@ -8,7 +8,7 @@ import java.util.List;
 import com.graphql.entity.queryentity.log.LogDTO;
 
 import io.quarkus.mongodb.panache.PanacheMongoRepository;
-
+import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 
 
@@ -21,4 +21,6 @@ public List<LogDTO> findByServiceName(String serviceName) {
 
  
 }
-}
+
+
+ }
