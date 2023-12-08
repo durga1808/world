@@ -6,13 +6,19 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
+import com.graphql.entity.otellog.ScopeLogs;
+import com.graphql.entity.otellog.scopeLogs.LogRecord;
 import com.graphql.entity.queryentity.log.LogDTO;
+import com.graphql.entity.queryentity.log.LogMetrics;
 import com.graphql.entity.queryentity.log.LogQuery;
 import com.graphql.repo.query.LogQueryRepo;
 import com.mongodb.client.MongoClient;
@@ -118,6 +124,241 @@ public List<LogDTO> getFilterErrorLogs(List<LogDTO> logs) {
             .collect(Collectors.toList());
     }
    
-}
-  
 
+
+//LogSummaryChartCount
+
+
+
+    public List<LogMetrics> getLogMetricCount( List<String> serviceNameList, LocalDate from, LocalDate to,Integer minutesAgo
+            
+    ) {
+        System.out.println("from: " + from);
+        System.out.println("to: " + to);
+        System.out.println("minutesAgo: " + minutesAgo);
+
+        List<LogDTO> logList = logQueryRepo.listAll();
+        Map<String, LogMetrics> metricsMap = new HashMap<>();
+
+        Instant fromInstant = null;
+        Instant toInstant = null;
+
+        if (from != null && to != null) {
+            Instant startOfFrom = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
+            Instant startOfTo = to.atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+            fromInstant = startOfFrom.isBefore(startOfTo) ? startOfFrom : startOfTo;
+            toInstant = startOfFrom.isBefore(startOfTo) ? startOfTo : startOfFrom;
+
+            toInstant = toInstant.plus(1, ChronoUnit.DAYS);
+        } else if (minutesAgo > 0) {
+            Instant currentInstant = Instant.now();
+            Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+
+            Instant startOfCurrentDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+            if (minutesAgoInstant.isBefore(startOfCurrentDay)) {
+                fromInstant = startOfCurrentDay;
+            } else {
+                fromInstant = minutesAgoInstant;
+            }
+
+            toInstant = currentInstant;
+        } else {
+            throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
+        }
+
+        for (LogDTO logDTO : logList) {
+            Date logCreateTime = logDTO.getCreatedTime();
+            if (logCreateTime != null) {
+                Instant logInstant = logCreateTime.toInstant();
+
+                if (logInstant.isAfter(fromInstant) && logInstant.isBefore(toInstant)
+                        && serviceNameList.contains(logDTO.getServiceName())) {
+                    String serviceName = logDTO.getServiceName();
+                    LogMetrics metrics = metricsMap.get(serviceName);
+
+                    if (metrics == null) {
+                        metrics = new LogMetrics();
+                        metrics.setServiceName(serviceName);
+                        metrics.setErrorCallCount(0L);
+                        metrics.setWarnCallCount(0L);
+                        metrics.setDebugCallCount(0L);
+                        metricsMap.put(serviceName, metrics);
+                    }
+
+                    calculateCallCounts(logDTO, metrics);
+                }
+            }
+        }
+
+        return new ArrayList<>(metricsMap.values());
+    }
+
+    private void calculateCallCounts(LogDTO logDTO, LogMetrics metrics) {
+        for (ScopeLogs scopeLogs : logDTO.getScopeLogs()) {
+            for (LogRecord logRecord : scopeLogs.getLogRecords()) {
+                String severityText = logRecord.getSeverityText(); 
+                if ("ERROR".equals(severityText) || "SEVERE".equals(severityText)) {
+                    metrics.setErrorCallCount(metrics.getErrorCallCount() + 1);
+                } else if ("WARN".equals(severityText)) {
+                    metrics.setWarnCallCount(metrics.getWarnCallCount() + 1);
+                } else if ("DEBUG".equals(severityText)) {
+                    metrics.setDebugCallCount(metrics.getDebugCallCount() + 1);
+                }
+            }
+        }
+    }
+
+
+
+
+    public List<LogDTO> getAllLogssOrderByCreatedTimeDesc(List<String> serviceNameList) {
+        return logQueryRepo.findAllOrderByCreatedTimeDesc(serviceNameList);
+    }
+
+    public List<LogDTO> getAllLogssAsc(List<String> serviceNameList) {
+        return logQueryRepo.findAllOrderByCreatedTimeAsc(serviceNameList);
+    }
+
+    public List<LogDTO> getErrorLogsByServiceNamesOrderBySeverityAndCreatedTimeDesc(List<String> serviceNameList) {
+        MongoDatabase database = mongoClient.getDatabase("OtelLog");
+    MongoCollection<LogDTO> logDTOCollection = database.getCollection("LogDTO", LogDTO.class);
+
+    Bson matchStage = Aggregates.match(Filters.in("serviceName", serviceNameList));
+
+    Bson addSortFieldStage = Aggregates.addFields(new Field<>("customSortField", new Document("$cond",
+            Arrays.asList(
+                    new Document("$in", Arrays.asList("$severityText", Arrays.asList("ERROR", "SEVERE"))),
+                    0,
+                    1
+            )
+    )));
+
+    Bson sortStage = Aggregates.sort(Sorts.orderBy(
+            Sorts.ascending("customSortField"),
+            Sorts.descending("createdTime")
+    ));
+
+    Bson projectStage = Aggregates.project(Projections.exclude("customSortField"));
+
+    List<LogDTO> result = logDTOCollection.aggregate(Arrays.asList(matchStage, addSortFieldStage, sortStage, projectStage))
+            .into(new ArrayList<>());
+
+    return result;
+       
+    }
+
+
+//logsearchfunction
+
+
+// public List<LogDTO> searchLogs(String keyword) {
+
+//     List<LogDTO> results = new ArrayList<>();
+//     String regexPattern = ".*" + Pattern.quote(keyword) + ".*";
+//     Bson regex = new Document("$regex", regexPattern).append("$options", "i");
+
+//     try {
+//         MongoCollection<Document> collection = mongoClient
+//                 .getDatabase("OtelLog")
+//                 .getCollection("LogDTO");
+
+//         // Construct the query using regex
+//         Bson query = new Document("scopeLogs.logRecords.body.stringValue", regex);
+
+//         MongoCursor<Document> cursor = collection.find(query).iterator();
+
+//         while (cursor.hasNext()) {
+//             Document document = cursor.next();
+//             LogDTO logResult = mapDocumentToLogDTO(document);
+//             results.add(logResult);
+//         }
+//     } catch (Exception e) {
+//         // Handle the exception according to your application's requirements
+//         e.printStackTrace(); // Replace with proper logging
+//     }
+
+//     return results;
+// }
+
+// private LogDTO mapDocumentToLogDTO(Document document) {
+//     LogDTO logDTO = new LogDTO();
+//     Gson gson = new Gson();
+//     String data = gson.toJson(document);
+//     // System.out.println("---data----  " + data);
+
+//     JsonObject jsonObject = JsonParser.parseString(data).getAsJsonObject();
+//     JsonArray jsonArray = jsonObject.getAsJsonArray("scopeLogs");
+//     // System.out.println("----scope---- " + jsonArray);
+
+//     logDTO.setServiceName(jsonObject.get("serviceName").getAsString());
+//     logDTO.setTraceId(jsonObject.get("traceId").getAsString());
+//     logDTO.setSpanId(jsonObject.get("spanId").getAsString());
+//     logDTO.setCreatedTime(document.getDate("createdTime"));
+//     logDTO.setSeverityText(jsonObject.get("severityText").getAsString());
+
+//     Scope scope = new Scope();
+//     List<LogRecord> logRecords = new ArrayList<LogRecord>();
+
+//     for(int i = 0 ; i < jsonArray.size() ; i++){
+//         JsonObject jsonObject2 = jsonArray.get(i).getAsJsonObject();
+//         scope.setName(jsonObject2.getAsJsonObject("scope").get("name").getAsString());
+
+//         JsonArray jsonArray2 = jsonObject2.getAsJsonArray("logRecords");
+        
+//         for(int j = 0 ; j < jsonArray2.size() ; j++){
+//             LogRecord logRecord = new LogRecord();
+//             Body body = new Body();
+//             JsonObject jsonObject3 = jsonArray2.get(j).getAsJsonObject();
+//             System.out.println("-------" + jsonObject3.get("timeUnixNano").getAsString());
+//             logRecord.setTimeUnixNano(jsonObject3.get("timeUnixNano").getAsString());
+//             logRecord.setObservedTimeUnixNano(jsonObject3.get("observedTimeUnixNano").getAsString());
+//             logRecord.setSeverityNumber(jsonObject3.get("severityNumber").getAsInt());
+//             logRecord.setSeverityText(jsonObject3.get("severityText").getAsString());
+//             logRecord.setFlags(jsonObject3.get("flags").getAsInt());
+//             logRecord.setTraceId(jsonObject3.get("traceId").getAsString());
+//             logRecord.setSpanId(jsonObject3.get("spanId").getAsString());
+//             body.setStringValue(jsonObject3.getAsJsonObject("body").get("stringValue").getAsString());
+//             logRecord.setBody(body);               
+//             logRecords.add(logRecord);
+//         }
+
+//         System.out.println("----scope name ---- " + jsonObject2.getAsJsonObject("scope").get("name").getAsString());
+//     }
+    
+//     ScopeLogs scopeLogs = new ScopeLogs();
+//     scopeLogs.setScope(scope);
+//     scopeLogs.setLogRecords(logRecords);
+//     List<ScopeLogs> scopeLogsArray = new ArrayList<ScopeLogs>();
+//     scopeLogsArray.add(scopeLogs);
+//     logDTO.setScopeLogs(scopeLogsArray);
+  
+//     return logDTO;   
+// }
+
+
+// public List<LogDTO> getFilterLogsByCreatedTimeDesc(List<LogDTO> logs) {
+//     System.out.println("------getFilterLogsByCreatedTimeDesc---------" + logs.size());
+//     return logs.stream()
+//             .sorted(Comparator.comparing(LogDTO::getCreatedTime, Comparator.reverseOrder()))
+//             .collect(Collectors.toList());
+// }
+
+// public List<LogDTO> getFilterLogssAsc(List<LogDTO> logs) {
+//     return logs.stream().sorted(Comparator.comparing(LogDTO::getCreatedTime)).collect(Collectors.toList());
+// }
+
+// public List<LogDTO> getFilterErrorLogs(List<LogDTO> logs) {
+//     return logs.stream()
+//             .sorted(Comparator
+//                     .comparing((LogDTO log) -> {
+//                         String severityText = log.getSeverityText();
+//                         return ("ERROR".equals(severityText) || "SEVERE".equals(severityText)) ? 0 : 1;
+//                     })
+//                     .thenComparing(LogDTO::getCreatedTime, Comparator.nullsLast(Comparator.reverseOrder()))
+//             )
+//             .collect(Collectors.toList());
+// }
+
+}
