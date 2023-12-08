@@ -73,7 +73,34 @@ public class LogQuerycontroller{
 
 
 
-@Query("filterLogs")
+// @Query("filterLogs")
+// public List<LogDTO> searchLogsPaged(
+//         LogQuery logQuery,
+//         int page,
+//         int pageSize,
+//         LocalDate from,
+//         LocalDate to,
+//         Integer minutesAgo,
+//         String sortOrder
+// ) {
+//     List<LogDTO> logs = logQueryHandler.searchLogsPaged(logQuery, from, to, minutesAgo);
+
+//     if ("new".equalsIgnoreCase(sortOrder)) {
+//       logs = logQueryHandler.getFilterLogsByCreatedTimeDesc(logs);
+//   } else if ("old".equalsIgnoreCase(sortOrder)) {
+//       logs = logQueryHandler.getFilterLogssAsc(logs);
+//   } else if ("error".equalsIgnoreCase(sortOrder)) {
+//       logs = logQueryHandler.getFilterErrorLogs(logs);
+//   }  else{
+//     throw new IllegalArgumentException("Invalid sortOrder parameter. Use 'new', 'old', or 'error'.");
+// }
+
+//     return logs;
+// }
+
+
+
+@Query
 public List<LogDTO> searchLogsPaged(
         LogQuery logQuery,
         int page,
@@ -83,22 +110,53 @@ public List<LogDTO> searchLogsPaged(
         Integer minutesAgo,
         String sortOrder
 ) {
-    List<LogDTO> logs = logQueryHandler.searchLogsPaged(logQuery, from, to, minutesAgo);
+    if (page <= 0 || pageSize <= 0) {
+        // Returning an empty list if page or pageSize is invalid
+        return Collections.emptyList();
+    }
 
-    if ("new".equalsIgnoreCase(sortOrder)) {
-      logs = logQueryHandler.getFilterLogsByCreatedTimeDesc(logs);
-  } else if ("old".equalsIgnoreCase(sortOrder)) {
-      logs = logQueryHandler.getFilterLogssAsc(logs);
-  } else if ("error".equalsIgnoreCase(sortOrder)) {
-      logs = logQueryHandler.getFilterErrorLogs(logs);
-  }  else{
-    throw new IllegalArgumentException("Invalid sortOrder parameter. Use 'new', 'old', or 'error'.");
+    try {
+        List<LogDTO> logs = logQueryHandler.searchLogsPaged(logQuery, from, to, minutesAgo);
+
+        if ("new".equalsIgnoreCase(sortOrder)) {
+            logs = logQueryHandler.getFilterLogsByCreatedTimeDesc(logs);
+        } else if ("old".equalsIgnoreCase(sortOrder)) {
+            logs = logQueryHandler.getFilterLogssAsc(logs);
+        } else if ("error".equalsIgnoreCase(sortOrder)) {
+            logs = logQueryHandler.getFilterErrorLogs(logs);
+        } else {
+            throw new IllegalArgumentException("Invalid sortOrder parameter. Use 'new', 'old', or 'error'.");
+        }
+
+        int startIndex = (page - 1) * pageSize;
+        int endIndex = Math.min(startIndex + pageSize, logs.size());
+
+        if (startIndex >= endIndex || logs.isEmpty()) {
+            Map<String, Object> emptyResponse = new HashMap<>();
+            emptyResponse.put("data", Collections.emptyList());
+            emptyResponse.put("totalCount", emptyResponse.size());
+            
+            // Returning an empty list if no logs are found
+            return buildResponse(emptyResponse);
+        }
+       
+        // Returning the sublist of logs with total count
+        return logs.subList(startIndex, endIndex);
+    } catch (Exception e) {
+        // Handle exceptions if necessary
+        return Collections.emptyList();
+    }
 }
 
-    return logs;
+private List<LogDTO> buildResponse(Map<String, Object> response) {
+    // Implement the logic to convert the response map into a List<LogDTO>
+    // ...
+
+    // For now, returning an empty list as a placeholder
+    return Collections.emptyList();
 }
 
-  
+
 
 @POST
     @Path("/filteredLogs")
