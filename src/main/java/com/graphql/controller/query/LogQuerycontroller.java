@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import javax.naming.directory.SearchResult;
+
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Name;
 import org.eclipse.microprofile.graphql.Query;
@@ -26,6 +28,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.graphql.entity.queryentity.log.LogDTO;
 import com.graphql.entity.queryentity.log.LogMetrics;
+import com.graphql.entity.queryentity.log.LogPage;
 import com.graphql.entity.queryentity.log.LogQuery;
 
 import com.graphql.handler.query.LogQueryHandler;
@@ -100,8 +103,9 @@ public class LogQuerycontroller{
 
 
 
-@Query
-public List<LogDTO> searchLogsPaged(
+
+@Query("filterLogs")
+public LogPage searchLogsPaged(
         LogQuery logQuery,
         int page,
         int pageSize,
@@ -110,51 +114,91 @@ public List<LogDTO> searchLogsPaged(
         Integer minutesAgo,
         String sortOrder
 ) {
-    if (page <= 0 || pageSize <= 0) {
-        // Returning an empty list if page or pageSize is invalid
-        return Collections.emptyList();
+    // Get the total count and paginated logs
+    List<LogDTO> logs = logQueryHandler.searchLogsPaged(logQuery, from, to, minutesAgo);
+    
+
+    // Apply sorting based on sortOrder
+    if ("new".equalsIgnoreCase(sortOrder)) {
+        logs = logQueryHandler.getFilterLogsByCreatedTimeDesc(logs);
+    } else if ("old".equalsIgnoreCase(sortOrder)) {
+        logs = logQueryHandler.getFilterLogssAsc(logs);
+    } else if ("error".equalsIgnoreCase(sortOrder)) {
+        logs = logQueryHandler.getFilterErrorLogs(logs);
+    } else {
+        throw new IllegalArgumentException("Invalid sortOrder parameter. Use 'new', 'old', or 'error'.");
     }
 
-    try {
-        List<LogDTO> logs = logQueryHandler.searchLogsPaged(logQuery, from, to, minutesAgo);
+    // Calculate total count
+    int totalCount = logs.size();
 
-        if ("new".equalsIgnoreCase(sortOrder)) {
-            logs = logQueryHandler.getFilterLogsByCreatedTimeDesc(logs);
-        } else if ("old".equalsIgnoreCase(sortOrder)) {
-            logs = logQueryHandler.getFilterLogssAsc(logs);
-        } else if ("error".equalsIgnoreCase(sortOrder)) {
-            logs = logQueryHandler.getFilterErrorLogs(logs);
-        } else {
-            throw new IllegalArgumentException("Invalid sortOrder parameter. Use 'new', 'old', or 'error'.");
-        }
+    // Apply pagination
+    int startIdx = (page - 1) * pageSize;
+    int endIdx = Math.min(startIdx + pageSize, logs.size());
+    List<LogDTO> paginatedLogs = logs.subList(startIdx, endIdx);
 
-        int startIndex = (page - 1) * pageSize;
-        int endIndex = Math.min(startIndex + pageSize, logs.size());
+    // Create and return LogPage object
+    return new LogPage(paginatedLogs, totalCount);
+}
 
-        if (startIndex >= endIndex || logs.isEmpty()) {
-            Map<String, Object> emptyResponse = new HashMap<>();
-            emptyResponse.put("data", Collections.emptyList());
-            emptyResponse.put("totalCount", emptyResponse.size());
+
+// @Query
+// public List<LogDTO> searchLogsPaged(
+//         LogQuery logQuery,
+//         int page,
+//         int pageSize,
+//         LocalDate from,
+//         LocalDate to,
+//         Integer minutesAgo,
+//         String sortOrder
+// ) {
+//     if (page <= 0 || pageSize <= 0) {
+//         // Returning an empty list if page or pageSize is invalid
+//         return Collections.emptyList();
+//     }
+
+//     try {
+//         List<LogDTO> logs = logQueryHandler.searchLogsPaged(logQuery, from, to, minutesAgo);
+
+//         if ("new".equalsIgnoreCase(sortOrder)) {
+//             logs = logQueryHandler.getFilterLogsByCreatedTimeDesc(logs);
+//         } else if ("old".equalsIgnoreCase(sortOrder)) {
+//             logs = logQueryHandler.getFilterLogssAsc(logs);
+//         } else if ("error".equalsIgnoreCase(sortOrder)) {
+//             logs = logQueryHandler.getFilterErrorLogs(logs);
+//         } else {
+//             throw new IllegalArgumentException("Invalid sortOrder parameter. Use 'new', 'old', or 'error'.");
+//         }
+
+//         int startIndex = (page - 1) * pageSize;
+//         int endIndex = Math.min(startIndex + pageSize, logs.size());
+
+//         if (startIndex >= endIndex || logs.isEmpty()) {
+//             Map<String, Object> emptyResponse = new HashMap<>();
+//             // emptyResponse.put("data", Collections.emptyList());
+//             // emptyResponse.put("totalCount", emptyResponse.size());
+//             emptyResponse.put("totalCount", logs.size());
+
             
-            // Returning an empty list if no logs are found
-            return buildResponse(emptyResponse);
-        }
+//             // Returning an empty list if no logs are found
+//             return buildResponse(emptyResponse);
+//         }
        
-        // Returning the sublist of logs with total count
-        return logs.subList(startIndex, endIndex);
-    } catch (Exception e) {
-        // Handle exceptions if necessary
-        return Collections.emptyList();
-    }
-}
+//         // Returning the sublist of logs with total count
+//         return logs.subList(startIndex, endIndex);
+//     } catch (Exception e) {
+//         // Handle exceptions if necessary
+//         return Collections.emptyList();
+//     }
+// }
 
-private List<LogDTO> buildResponse(Map<String, Object> response) {
-    // Implement the logic to convert the response map into a List<LogDTO>
-    // ...
+// private List<LogDTO> buildResponse(Map<String, Object> response) {
+//     // Implement the logic to convert the response map into a List<LogDTO>
+//     // ...
 
-    // For now, returning an empty list as a placeholder
-    return Collections.emptyList();
-}
+//     // For now, returning an empty list as a placeholder
+//     return Collections.emptyList();
+// }
 
 
 
