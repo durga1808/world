@@ -25,13 +25,4 @@ public class LogDTO {
     private String severityText;
     private List<ScopeLogs> scopeLogs;
   
-    
-   
-   
-   
-    
-    
-    
-    
-   
   }

@@ -80,7 +80,7 @@ public List<LogDTO> searchLogsPaged(LogQuery logQuery, LocalDate fromDate, Local
     } else if (minutesAgo != null) {
         fromInstant = toInstant.minus(minutesAgo, ChronoUnit.MINUTES);
     } else {
-        // Set a default value if none of from date and minutesAgo are provided
+       
         fromInstant = Instant.EPOCH;
     }
 
@@ -250,115 +250,9 @@ public List<LogDTO> getFilterErrorLogs(List<LogDTO> logs) {
     }
 
 
-//logsearchfunction
+    public List<LogDTO>  searchFunction(String keyword ){
+        return logQueryRepo.searchByStringValue(keyword);
+    }
 
-
-// public List<LogDTO> searchLogs(String keyword) {
-
-//     List<LogDTO> results = new ArrayList<>();
-//     String regexPattern = ".*" + Pattern.quote(keyword) + ".*";
-//     Bson regex = new Document("$regex", regexPattern).append("$options", "i");
-
-//     try {
-//         MongoCollection<Document> collection = mongoClient
-//                 .getDatabase("OtelLog")
-//                 .getCollection("LogDTO");
-
-//         // Construct the query using regex
-//         Bson query = new Document("scopeLogs.logRecords.body.stringValue", regex);
-
-//         MongoCursor<Document> cursor = collection.find(query).iterator();
-
-//         while (cursor.hasNext()) {
-//             Document document = cursor.next();
-//             LogDTO logResult = mapDocumentToLogDTO(document);
-//             results.add(logResult);
-//         }
-//     } catch (Exception e) {
-//         // Handle the exception according to your application's requirements
-//         e.printStackTrace(); // Replace with proper logging
-//     }
-
-//     return results;
-// }
-
-// private LogDTO mapDocumentToLogDTO(Document document) {
-//     LogDTO logDTO = new LogDTO();
-//     Gson gson = new Gson();
-//     String data = gson.toJson(document);
-//     // System.out.println("---data----  " + data);
-
-//     JsonObject jsonObject = JsonParser.parseString(data).getAsJsonObject();
-//     JsonArray jsonArray = jsonObject.getAsJsonArray("scopeLogs");
-//     // System.out.println("----scope---- " + jsonArray);
-
-//     logDTO.setServiceName(jsonObject.get("serviceName").getAsString());
-//     logDTO.setTraceId(jsonObject.get("traceId").getAsString());
-//     logDTO.setSpanId(jsonObject.get("spanId").getAsString());
-//     logDTO.setCreatedTime(document.getDate("createdTime"));
-//     logDTO.setSeverityText(jsonObject.get("severityText").getAsString());
-
-//     Scope scope = new Scope();
-//     List<LogRecord> logRecords = new ArrayList<LogRecord>();
-
-//     for(int i = 0 ; i < jsonArray.size() ; i++){
-//         JsonObject jsonObject2 = jsonArray.get(i).getAsJsonObject();
-//         scope.setName(jsonObject2.getAsJsonObject("scope").get("name").getAsString());
-
-//         JsonArray jsonArray2 = jsonObject2.getAsJsonArray("logRecords");
-        
-//         for(int j = 0 ; j < jsonArray2.size() ; j++){
-//             LogRecord logRecord = new LogRecord();
-//             Body body = new Body();
-//             JsonObject jsonObject3 = jsonArray2.get(j).getAsJsonObject();
-//             System.out.println("-------" + jsonObject3.get("timeUnixNano").getAsString());
-//             logRecord.setTimeUnixNano(jsonObject3.get("timeUnixNano").getAsString());
-//             logRecord.setObservedTimeUnixNano(jsonObject3.get("observedTimeUnixNano").getAsString());
-//             logRecord.setSeverityNumber(jsonObject3.get("severityNumber").getAsInt());
-//             logRecord.setSeverityText(jsonObject3.get("severityText").getAsString());
-//             logRecord.setFlags(jsonObject3.get("flags").getAsInt());
-//             logRecord.setTraceId(jsonObject3.get("traceId").getAsString());
-//             logRecord.setSpanId(jsonObject3.get("spanId").getAsString());
-//             body.setStringValue(jsonObject3.getAsJsonObject("body").get("stringValue").getAsString());
-//             logRecord.setBody(body);               
-//             logRecords.add(logRecord);
-//         }
-
-//         System.out.println("----scope name ---- " + jsonObject2.getAsJsonObject("scope").get("name").getAsString());
-//     }
-    
-//     ScopeLogs scopeLogs = new ScopeLogs();
-//     scopeLogs.setScope(scope);
-//     scopeLogs.setLogRecords(logRecords);
-//     List<ScopeLogs> scopeLogsArray = new ArrayList<ScopeLogs>();
-//     scopeLogsArray.add(scopeLogs);
-//     logDTO.setScopeLogs(scopeLogsArray);
-  
-//     return logDTO;   
-// }
-
-
-// public List<LogDTO> getFilterLogsByCreatedTimeDesc(List<LogDTO> logs) {
-//     System.out.println("------getFilterLogsByCreatedTimeDesc---------" + logs.size());
-//     return logs.stream()
-//             .sorted(Comparator.comparing(LogDTO::getCreatedTime, Comparator.reverseOrder()))
-//             .collect(Collectors.toList());
-// }
-
-// public List<LogDTO> getFilterLogssAsc(List<LogDTO> logs) {
-//     return logs.stream().sorted(Comparator.comparing(LogDTO::getCreatedTime)).collect(Collectors.toList());
-// }
-
-// public List<LogDTO> getFilterErrorLogs(List<LogDTO> logs) {
-//     return logs.stream()
-//             .sorted(Comparator
-//                     .comparing((LogDTO log) -> {
-//                         String severityText = log.getSeverityText();
-//                         return ("ERROR".equals(severityText) || "SEVERE".equals(severityText)) ? 0 : 1;
-//                     })
-//                     .thenComparing(LogDTO::getCreatedTime, Comparator.nullsLast(Comparator.reverseOrder()))
-//             )
-//             .collect(Collectors.toList());
-// }
 
 }

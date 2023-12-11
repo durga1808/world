@@ -1,7 +1,6 @@
 package com.graphql.repo.query;
 
-import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
+
 import java.util.List;
 
 
@@ -28,6 +27,12 @@ public List<LogDTO> findAllOrderByCreatedTimeDesc(List<String> serviceNameList) 
 
     public List<LogDTO> findAllOrderByCreatedTimeAsc(List<String> serviceNameList) {
         return find("serviceName in ?1",Sort.ascending("createdTime"),serviceNameList).list();
+    }
+
+
+    public List<LogDTO> searchByStringValue(String keyword) {
+       
+        return find("{'scopeLogs.logRecords.body.stringValue': { $regex: ?1, $options: 'i' }}", keyword).list();
     }
 
 
