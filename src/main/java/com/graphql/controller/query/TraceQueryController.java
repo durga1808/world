@@ -1,7 +1,9 @@
 package com.graphql.controller.query;
 
 import java.time.LocalDate;
+import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Name;
@@ -12,6 +14,8 @@ import com.graphql.entity.queryentity.trace.TraceQuery;
 import com.graphql.handler.query.TraceQueryHandler;
 import com.graphql.repo.query.TraceQueryRepo;
 
+import io.quarkus.mongodb.panache.PanacheQuery;
+import io.quarkus.panache.common.Page;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.PathParam;
 
@@ -51,11 +55,17 @@ public class TraceQueryController {
     //     return traceQueryHandler.getTracesByStatusCodeAndDuration(minStatusCode, maxStatusCode, duration, serviceNames, methodNames);
     // }
     
-    
     @Query
-    public List<TraceDTO> getTracesByStatusCodeAndDuration(@Name("query") TraceQuery query) {
-        return traceQueryHandler.getTracesByStatusCodeAndDuration(query);
+    public List<TraceDTO> getTracesByStatusCodeAndDuration(
+            @Name("query") TraceQuery query,
+            @Name("page") int page,
+            @Name("pagesize") int pageSize,
+            @Name("from") LocalDate fromDate,
+            @Name("to") LocalDate toDate,
+            @Name("minutesAgo") Integer minutesAgo) {
+        return traceQueryHandler.getTracesByStatusCodeAndDuration(query, page, pageSize, fromDate, toDate, minutesAgo);
     }
+    
 
 
     
