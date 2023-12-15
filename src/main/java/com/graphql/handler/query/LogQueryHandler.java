@@ -30,6 +30,8 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Sorts;
 
+import io.quarkus.mongodb.panache.PanacheQuery;
+import io.quarkus.panache.common.Parameters;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -252,6 +254,41 @@ public List<LogDTO> getFilterErrorLogs(List<LogDTO> logs) {
 
     public List<LogDTO>  searchFunction(String keyword ){
         return logQueryRepo.searchByStringValue(keyword);
+    }
+
+
+
+
+    // public List<LogDTO> filterServiceName(LogQuery logQuery) {
+
+        
+    //     PanacheQuery<LogDTO> panacheQuery = LogDTO.find(
+    //             "serviceName in :serviceNames and severityText in :severityTexts",
+    //             Parameters
+    //                     .with("serviceNames", logQuery.getServiceName())
+    //                     .and("severityTexts", logQuery.getSeverityText()));
+    
+    //     return panacheQuery.list();
+    // }
+   
+ 
+       public List<LogDTO> filterServiceName(List<String> serviceNames, List<String> severityTexts, LocalDate fromDate, LocalDate toDate) {
+
+        // Convert from LocalDate to Date with IST time zone
+        ZoneId istZone = ZoneId.of("Asia/Kolkata");
+        Instant fromInstant = fromDate.atStartOfDay(istZone).toInstant();
+        Instant toInstant = toDate.plusDays(1).atStartOfDay(istZone).toInstant();
+
+        PanacheQuery<LogDTO> panacheQuery = LogDTO.find(
+                "serviceName in :serviceNames and severityText in :severityTexts " +
+                        "and createdTime between :fromDate and :toDate",
+                Parameters
+                        .with("serviceNames", serviceNames)
+                        .and("severityTexts", severityTexts)
+                        .and("fromDate", Date.from(fromInstant))
+                        .and("toDate", Date.from(toInstant)));
+
+        return panacheQuery.list();
     }
 
 

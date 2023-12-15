@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.graphql.GraphQLApi;
-
+import org.eclipse.microprofile.graphql.Name;
 import org.eclipse.microprofile.graphql.Query;
 
 
@@ -380,6 +380,17 @@ private boolean isWithinDateRange(Date logTimestamp, Instant from, Instant to) {
 Instant logInstant = logTimestamp.toInstant();
 return (logInstant.equals(from) || logInstant.isAfter(from)) &&
         (logInstant.equals(to) || logInstant.isBefore(to));
+}
+
+
+
+
+
+
+@Query
+public List<LogDTO> filterServiceName(@Name("logquery")LogQuery logQuery){
+// @Name("from") LocalDate from, @Name("to") LocalDate to
+    return logQueryHandler.filterServiceName(logQuery);
 }
 
 }
