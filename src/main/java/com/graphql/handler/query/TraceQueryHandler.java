@@ -1,33 +1,19 @@
 package com.graphql.handler.query;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.bson.Document;
-import org.bson.conversions.Bson;
-
-import com.graphql.entity.oteltrace.scopeSpans.Spans;
-import com.graphql.entity.queryentity.trace.StatusCodeRange;
 import com.graphql.entity.queryentity.trace.TraceDTO;
 import com.graphql.entity.queryentity.trace.TraceQuery;
 import com.graphql.repo.query.TraceQueryRepo;
-import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoCursor;
-import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Projections;
-import com.mongodb.client.model.Sorts;
-
 import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Parameters;
@@ -153,4 +139,35 @@ public List<TraceDTO> getTracesByStatusCodeAndDuration(TraceQuery query, int pag
                             trace.getCreatedTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().compareTo(toDate) <= 0)
             .collect(Collectors.toList());
 }
+
+// Sort by created time in descending order
+  public List<TraceDTO> getTraceFilterOrderByCreatedTimeDesc(List<TraceDTO> traceList) {
+    return traceList.stream()
+        .sorted(Comparator.comparing(TraceDTO::getCreatedTime, Comparator.reverseOrder()))
+        .collect(Collectors.toList());
+  }
+
+  // Sort by created time in ascending order
+  public List<TraceDTO> getTraceFilterAsc(List<TraceDTO> traceList) {
+    return traceList.stream()
+        .sorted(Comparator.comparing(TraceDTO::getCreatedTime))
+        .collect(Collectors.toList());
+  }
+
+  // Sort by error first
+  public List<TraceDTO> getTraceFilterOrderByErrorFirst(List<TraceDTO> traceList) {
+    return traceList.stream()
+        .sorted(Comparator
+            .comparing(TraceDTO::getStatusCode, Comparator.nullsLast(Comparator.reverseOrder()))
+            .thenComparing(TraceDTO::getCreatedTime, Comparator.nullsLast(Comparator.reverseOrder())))
+        .collect(Collectors.toList());
+  }
+
+    // Sort by duration in descending order
+    public List<TraceDTO> getTraceFilterOrderByDuration(List<TraceDTO> traceList) {
+        return traceList.stream()
+            .filter(trace -> trace.getDuration() != null)
+            .sorted(Comparator.comparing(TraceDTO::getDuration, Comparator.reverseOrder()))
+            .collect(Collectors.toList());
+      }
 }
