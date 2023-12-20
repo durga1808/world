@@ -10,10 +10,14 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.bson.Document;
+
 import com.graphql.entity.queryentity.trace.TraceDTO;
 import com.graphql.entity.queryentity.trace.TraceQuery;
 import com.graphql.repo.query.TraceQueryRepo;
 import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoCollection;
+
 import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Parameters;
@@ -31,16 +35,16 @@ public class TraceQueryHandler {
 
     List<TraceDTO> traceDTOs = new ArrayList<>();
 
-    // public List<TraceDTO> getAllTraceData() {
-    //     List<TraceDTO> allTraces = traceQueryRepo.listAll();
-    //     return allTraces;
-    // }
+    public List<TraceDTO> getAllTraceData() {
+        List<TraceDTO> allTraces = traceQueryRepo.listAll();
+        return allTraces;
+    }
 
 
 
-    // public List<TraceDTO> getByServiceName(String serviceName) {
-    //     return traceQueryRepo.findByServiceName(serviceName);
-    // }
+    public List<TraceDTO> getByServiceName(String serviceName) {
+        return traceQueryRepo.findByServiceName(serviceName);
+    }
 
     //  public List<TraceDTO> getTracesByStatusCodeRange(Integer minStatusCode, Integer maxStatusCode) {
     //     PanacheQuery<TraceDTO> query = TraceDTO.find("statusCode >= :minStatusCode and statusCode <= :maxStatusCode",
@@ -79,6 +83,63 @@ public class TraceQueryHandler {
 //             .collect(Collectors.toList());
 // }
 
+
+
+// sort order decending
+public List<TraceDTO> getAllTracesOrderByCreatedTimeDesc(List<String> serviceNameList) {
+  return traceQueryRepo.findAllOrderByCreatedTimeDesc(serviceNameList);
+}
+
+// sort order ascending
+public List<TraceDTO> getAllTracesAsc(List<String> serviceNameList) {
+  return traceQueryRepo.findAllOrderByCreatedTimeAsc(serviceNameList);
+}
+
+// sort order error first
+public List<TraceDTO> findAllOrderByErrorFirst(List<String> serviceNameList) {
+  MongoCollection<Document> traceCollection = mongoClient
+      .getDatabase("OtelTrace")
+      .getCollection("TraceDTO");
+
+  List<TraceDTO> allTraces = traceCollection.find(TraceDTO.class).into(new ArrayList<>());
+
+  List<TraceDTO> sortedTraces = allTraces.stream()
+      .filter(trace -> serviceNameList.contains(trace.getServiceName())) // Filter by service name list
+      .sorted(Comparator
+          // Sort by error status first (statusCode >= 400 && statusCode <= 599)
+          .comparing((TraceDTO trace) -> {
+            Long statusCode = trace.getStatusCode();
+            return (statusCode != null && statusCode >= 400 && statusCode <= 599) ? 0 : 1;
+          })
+          // Then sort by status code in descending order
+          .thenComparing(TraceDTO::getStatusCode, Comparator.nullsLast(Comparator.reverseOrder()))
+          // Finally, sort by created time in descending order
+          .thenComparing(TraceDTO::getCreatedTime, Comparator.nullsLast(Comparator.reverseOrder())))
+      .collect(Collectors.toList());
+  return sortedTraces;
+}
+
+//sorting peaked value first
+public List<TraceDTO> findAllOrderByDuration(List<String> serviceNameList) {
+  MongoCollection<Document> traceCollection = mongoClient
+      .getDatabase("OtelTrace")
+      .getCollection("TraceDTO");
+
+  List<TraceDTO> allTraces = traceCollection.find(TraceDTO.class).into(new ArrayList<>());
+
+  List<TraceDTO> sortedTraces = allTraces.stream()
+      .filter(trace -> serviceNameList.contains(trace.getServiceName()))
+      .filter(trace -> trace.getDuration() != null) // Add a null check for duration
+      .sorted(Comparator
+          .comparing(TraceDTO::getDuration, Comparator.reverseOrder()))
+      .collect(Collectors.toList());
+
+  return sortedTraces;
+}
+
+
+
+//trace filter
 public List<TraceDTO> getTracesByStatusCodeAndDuration(TraceQuery query, int page, int pageSize, LocalDate fromDate, LocalDate toDate, Integer minutesAgo) {
    
     Instant fromInstant = null;
@@ -140,21 +201,21 @@ public List<TraceDTO> getTracesByStatusCodeAndDuration(TraceQuery query, int pag
             .collect(Collectors.toList());
 }
 
-// Sort by created time in descending order
+// filter Sort by created time in descending order
   public List<TraceDTO> getTraceFilterOrderByCreatedTimeDesc(List<TraceDTO> traceList) {
     return traceList.stream()
         .sorted(Comparator.comparing(TraceDTO::getCreatedTime, Comparator.reverseOrder()))
         .collect(Collectors.toList());
   }
 
-  // Sort by created time in ascending order
+  // filter Sort by created time in ascending order
   public List<TraceDTO> getTraceFilterAsc(List<TraceDTO> traceList) {
     return traceList.stream()
         .sorted(Comparator.comparing(TraceDTO::getCreatedTime))
         .collect(Collectors.toList());
   }
 
-  // Sort by error first
+  // filter Sort by error first
   public List<TraceDTO> getTraceFilterOrderByErrorFirst(List<TraceDTO> traceList) {
     return traceList.stream()
         .sorted(Comparator
@@ -163,7 +224,7 @@ public List<TraceDTO> getTracesByStatusCodeAndDuration(TraceQuery query, int pag
         .collect(Collectors.toList());
   }
 
-    // Sort by duration in descending order
+    //filter Sort by duration in descending order
     public List<TraceDTO> getTraceFilterOrderByDuration(List<TraceDTO> traceList) {
         return traceList.stream()
             .filter(trace -> trace.getDuration() != null)
