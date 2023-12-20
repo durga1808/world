@@ -1,6 +1,9 @@
 package com.graphql.repo.query;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.graphql.entity.queryentity.trace.TraceDTO;
 
@@ -24,8 +27,9 @@ public List<TraceDTO> findByServiceName(String serviceName) {
 
     public List<TraceDTO> findAllOrderByCreatedTimeAsc(List<String> serviceNameList) {
         return find("serviceName in ?1",Sort.ascending("createdTime"),serviceNameList).list();
-    }
+    }  
 
+    
        
-    }
+}
 

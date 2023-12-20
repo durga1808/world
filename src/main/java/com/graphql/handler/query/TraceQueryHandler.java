@@ -2,21 +2,34 @@ package com.graphql.handler.query;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.bson.Document;
+import org.bson.conversions.Bson;
 
+import com.graphql.entity.queryentity.trace.DBMetric;
+import com.graphql.entity.queryentity.trace.KafkaMetrics;
 import com.graphql.entity.queryentity.trace.TraceDTO;
+import com.graphql.entity.queryentity.trace.TraceMetrics;
 import com.graphql.entity.queryentity.trace.TraceQuery;
 import com.graphql.repo.query.TraceQueryRepo;
+import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.Aggregates;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
 
 import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
@@ -231,4 +244,428 @@ public List<TraceDTO> getTracesByStatusCodeAndDuration(TraceQuery query, int pag
             .sorted(Comparator.comparing(TraceDTO::getDuration, Comparator.reverseOrder()))
             .collect(Collectors.toList());
       }
+
+
+//trace summery chart count
+public List<TraceMetrics> getAllTraceMetricCount(List<String> serviceNameList, LocalDate fromDate, LocalDate toDate, Integer minutesAgo) {
+  List<TraceDTO> traces = fetchTracesByServiceName(serviceNameList);
+
+  Instant fromInstant;
+  Instant toInstant;
+
+  if (fromDate != null && toDate != null) {
+      fromInstant = fromDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
+      toInstant = toDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+  } else if (minutesAgo != null && minutesAgo > 0) {
+      Instant currentInstant = Instant.now();
+      fromInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+      toInstant = currentInstant;
+  } else {
+      throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
+  }
+
+  return traces.stream()
+          .filter(trace -> trace.getCreatedTime() != null && trace.getCreatedTime().toInstant().isAfter(fromInstant) && trace.getCreatedTime().toInstant().isBefore(toInstant))
+          .collect(Collectors.groupingBy(TraceDTO::getServiceName))
+          .entrySet().stream()
+          .map(entry -> {
+              String serviceName = entry.getKey();
+              List<TraceDTO> serviceTraces = entry.getValue();
+
+              if (serviceTraces != null) {
+                  long totalErrorCalls = serviceTraces.stream()
+                          .filter(trace -> trace != null && trace.getStatusCode() != null && trace.getStatusCode() >= 400 && trace.getStatusCode() <= 599)
+                          .count();
+
+                  long totalSuccessCalls = serviceTraces.stream()
+                          .filter(trace -> trace != null && trace.getStatusCode() != null && trace.getStatusCode() >= 200 && trace.getStatusCode() <= 299)
+                          .count();
+
+                  long peakLatencyCount = serviceTraces.stream()
+                          .filter(trace -> trace != null && trace.getDuration() != null && trace.getDuration() > 500)
+                          .count();
+
+                  long apiCallCount = totalErrorCalls + totalSuccessCalls;
+
+                  return new TraceMetrics(serviceName, apiCallCount, peakLatencyCount, totalErrorCalls, totalSuccessCalls);
+              } else {
+                  // System.out.println("serviceTraces is null for serviceName: " + serviceName);
+                  return new TraceMetrics(serviceName, 0L, 0L, 0L, 0L);
+              }
+          })
+          .collect(Collectors.toList());
+}
+
+public static List<TraceDTO> fetchTracesByServiceName(List<String> serviceNameList) {
+  return TraceDTO.list("serviceName in ?1", serviceNameList);
+}
+
+
+
+//trace peack latency count
+public static List<TraceMetrics> getPeakLatency(List<String> serviceNameList, LocalDate fromDate, LocalDate toDate, Integer minutesAgo, Long minPeakLatency, Long maxPeakLatency) {
+  List<TraceDTO> traces = fetchTracesByServiceName(serviceNameList);
+
+  Instant fromInstant;
+  Instant toInstant;
+
+  if (fromDate != null && toDate != null) {
+      fromInstant = fromDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
+      toInstant = toDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+  } else if (minutesAgo != null && minutesAgo > 0) {
+      Instant currentInstant = Instant.now();
+      fromInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+      toInstant = currentInstant;
+  } else {
+      throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
+  }
+
+  return traces.stream()
+          .filter(trace -> trace.getCreatedTime() != null && trace.getCreatedTime().toInstant().isAfter(fromInstant) && trace.getCreatedTime().toInstant().isBefore(toInstant))
+          .collect(Collectors.groupingBy(TraceDTO::getServiceName))
+          .entrySet().stream()
+          .map(entry -> {
+              String serviceName = entry.getKey();
+              List<TraceDTO> serviceTraces = entry.getValue();
+
+              if (serviceTraces != null) {
+                  long totalErrorCalls = serviceTraces.stream()
+                          .filter(trace -> trace != null && trace.getStatusCode() != null && trace.getStatusCode() >= 400 && trace.getStatusCode() <= 599)
+                          .count();
+
+                  long totalSuccessCalls = serviceTraces.stream()
+                          .filter(trace -> trace != null && trace.getStatusCode() != null && trace.getStatusCode() >= 200 && trace.getStatusCode() <= 299)
+                          .count();
+
+                  long peakLatencyCount = serviceTraces.stream()
+                          .filter(trace -> trace != null && trace.getDuration() != null && trace.getDuration() >= minPeakLatency && trace.getDuration() <= maxPeakLatency)
+                          .count();
+
+                          long apiCallCount = serviceTraces.size();
+                  return new TraceMetrics(serviceName, apiCallCount, peakLatencyCount, totalErrorCalls, totalSuccessCalls);
+              } else {
+                  // System.out.println("serviceTraces is null for serviceName: " + serviceName);
+                  return new TraceMetrics(serviceName, 0L, 0L, 0L, 0L);
+              }
+          })
+          .collect(Collectors.toList());
+}
+
+
+
+public List<DBMetric> getAllDBMetrics(List<String> serviceNameList, LocalDate from, LocalDate to, int minutesAgo) {
+    MongoCollection<Document> collection = mongoClient.getDatabase("OtelTrace")
+        .getCollection("TraceDTO");
+
+    // Match service names
+    Bson serviceNameFilter = Filters.in("serviceName", serviceNameList);
+
+    List<Bson> pipeline = new ArrayList<>();
+
+    if (from != null && to != null) {
+      // Date-wise filtering
+      pipeline.add(Aggregates.match(Filters.and(
+          Filters.regex("spans.attributes.key", "^db", "m"),
+          serviceNameFilter,
+          Filters.gte("createdTime", Date.from(from.atStartOfDay(ZoneId.systemDefault()).toInstant())),
+          Filters.lt("createdTime", Date.from(to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant())))));
+    } else if (minutesAgo == 1440) {
+      // Fetch data for today
+      LocalDateTime now = LocalDateTime.now(ZoneId.systemDefault());
+      LocalDateTime startOfToday = now.toLocalDate().atStartOfDay();
+      LocalDateTime endOfToday = startOfToday.plusDays(1);
+
+      pipeline.add(Aggregates.match(Filters.and(
+          Filters.regex("spans.attributes.key", "^db", "m"),
+          serviceNameFilter,
+          Filters.gte("createdTime", Date.from(startOfToday.atZone(ZoneId.systemDefault()).toInstant())),
+          Filters.lt("createdTime", Date.from(endOfToday.atZone(ZoneId.systemDefault()).toInstant())))));
+    } else if (minutesAgo > 0) {
+      // Time-based filtering
+      LocalDateTime thresholdTime = LocalDateTime.now().minusMinutes(minutesAgo);
+
+      pipeline.add(Aggregates.match(Filters.and(
+          Filters.regex("spans.attributes.key", "^db", "m"),
+          serviceNameFilter,
+          Filters.gte("createdTime", Date.from(thresholdTime.atZone(ZoneId.systemDefault()).toInstant())))));
+    }
+
+    pipeline.add(Aggregates.unwind("$spans"));
+    pipeline.add(Aggregates.match(Filters.and(
+        Filters.in("serviceName", serviceNameList),
+        Filters.regex("spans.attributes.key", "^db", "m"))));
+    pipeline.add(Aggregates.project(Projections.fields(
+        Projections.computed("serviceName", "$serviceName"),
+        Projections.computed("startTimeUnixNano", "$spans.startTimeUnixNano"),
+        Projections.computed("endTimeUnixNano", "$spans.endTimeUnixNano"))));
+
+    AggregateIterable<Document> result = collection.aggregate(pipeline);
+
+    Map<String, DBMetric> dbMetricMap = new HashMap<>();
+
+    result.forEach((Consumer<? super Document>) document -> {
+      String serviceName = getAsStringOrFallback(document, "serviceName", "Unknown");
+
+      String startTimeUnixNanoStr = document.getString("startTimeUnixNano");
+      String endTimeUnixNanoStr = document.getString("endTimeUnixNano");
+
+      long startTimeUnixNano = Long.parseLong(startTimeUnixNanoStr);
+      long endTimeUnixNano = Long.parseLong(endTimeUnixNanoStr);
+
+      ZonedDateTime startIST = Instant.ofEpochSecond(0, startTimeUnixNano).atZone(ZoneId.of("Asia/Kolkata"));
+      ZonedDateTime endIST = Instant.ofEpochSecond(0, endTimeUnixNano).atZone(ZoneId.of("Asia/Kolkata"));
+      long dbduration = ChronoUnit.MILLIS.between(startIST, endIST);
+
+      String key = serviceName;
+      DBMetric dbMetric = dbMetricMap.computeIfAbsent(key, k -> new DBMetric(serviceName, 0L, 0L));
+
+      dbMetric.setDbCallCount(dbMetric.getDbCallCount() + 1);
+      if (dbduration > 50) {
+        dbMetric.setDbPeakLatencyCount(Math.max(dbMetric.getDbPeakLatencyCount(), dbduration));
+      }
+    });
+
+    List<DBMetric> resultList = new ArrayList<>(dbMetricMap.values());
+
+    return resultList;
+  }
+
+
+
+  private String getAsStringOrFallback(Document document, String fieldName, String fallback) {
+    return document.containsKey(fieldName) ? document.getString(fieldName) : fallback;
+}
+
+
+
+public List<DBMetric> getAllDBPeakLatency(List<String> serviceNameList, LocalDate from, LocalDate to,
+      int minutesAgo, int minPeakLatency, int maxPeakLatency) {
+    MongoCollection<Document> collection = mongoClient.getDatabase("OtelTrace")
+        .getCollection("TraceDTO");
+
+    // Match service names
+    Bson serviceNameFilter = Filters.in("serviceName", serviceNameList);
+
+    List<Bson> pipeline = new ArrayList<>();
+
+    if (from != null && to != null) {
+      // Date-wise filtering
+      pipeline.add(Aggregates.match(Filters.and(
+          Filters.regex("spans.attributes.key", "^db", "m"),
+          serviceNameFilter,
+          Filters.gte("createdTime", Date.from(from.atStartOfDay(ZoneId.systemDefault()).toInstant())),
+          Filters.lt("createdTime", Date.from(to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant())))));
+    } else if (minutesAgo == 1440) {
+      // Fetch data for today
+      LocalDateTime now = LocalDateTime.now(ZoneId.systemDefault());
+      LocalDateTime startOfToday = now.toLocalDate().atStartOfDay();
+      LocalDateTime endOfToday = startOfToday.plusDays(1);
+
+      pipeline.add(Aggregates.match(Filters.and(
+          Filters.regex("spans.attributes.key", "^db", "m"),
+          serviceNameFilter,
+          Filters.gte("createdTime", Date.from(startOfToday.atZone(ZoneId.systemDefault()).toInstant())),
+          Filters.lt("createdTime", Date.from(endOfToday.atZone(ZoneId.systemDefault()).toInstant())))));
+    } else if (minutesAgo > 0) {
+      // Time-based filtering
+      LocalDateTime thresholdTime = LocalDateTime.now().minusMinutes(minutesAgo);
+
+      pipeline.add(Aggregates.match(Filters.and(
+          Filters.regex("spans.attributes.key", "^db", "m"),
+          serviceNameFilter,
+          Filters.gte("createdTime", Date.from(thresholdTime.atZone(ZoneId.systemDefault()).toInstant())))));
+    }
+
+    pipeline.add(Aggregates.unwind("$spans"));
+    pipeline.add(Aggregates.match(Filters.and(
+        Filters.in("serviceName", serviceNameList),
+        Filters.regex("spans.attributes.key", "^db", "m"))));
+    pipeline.add(Aggregates.project(Projections.fields(
+        Projections.computed("serviceName", "$serviceName"),
+        Projections.computed("startTimeUnixNano", "$spans.startTimeUnixNano"),
+        Projections.computed("endTimeUnixNano", "$spans.endTimeUnixNano"))));
+
+    AggregateIterable<Document> result = collection.aggregate(pipeline);
+
+    Map<String, DBMetric> dbMetricMap = new HashMap<>();
+
+    result.forEach((Consumer<? super Document>) document -> {
+      String serviceName = getAsStringOrFallback(document, "serviceName", "Unknown");
+
+      String startTimeUnixNanoStr = document.getString("startTimeUnixNano");
+      String endTimeUnixNanoStr = document.getString("endTimeUnixNano");
+
+      long startTimeUnixNano = Long.parseLong(startTimeUnixNanoStr);
+      long endTimeUnixNano = Long.parseLong(endTimeUnixNanoStr);
+
+      ZonedDateTime startIST = Instant.ofEpochSecond(0, startTimeUnixNano).atZone(ZoneId.of("Asia/Kolkata"));
+      ZonedDateTime endIST = Instant.ofEpochSecond(0, endTimeUnixNano).atZone(ZoneId.of("Asia/Kolkata"));
+      long dbduration = ChronoUnit.MILLIS.between(startIST, endIST);
+
+
+
+      String key = serviceName;
+      DBMetric dbMetric = dbMetricMap.computeIfAbsent(key, k -> new DBMetric(serviceName, 0L, 0L));
+
+      
+     if (dbduration >= minPeakLatency && dbduration <= maxPeakLatency) { 
+        // Update the count based on the maximum dbDuration
+        dbMetric.setDbPeakLatencyCount(Math.max(dbMetric.getDbPeakLatencyCount(), dbduration));
+    }
+
+
+     });
+     
+
+    List<DBMetric> resultList = new ArrayList<>(dbMetricMap.values());
+
+    return resultList;
+  }
+
+
+
+public List<KafkaMetrics> getAllKafkaMetrics(List<String> serviceNames, LocalDate from, LocalDate to,
+      int minutesAgo) {
+    MongoCollection<Document> collection = mongoClient.getDatabase("OtelTrace")
+        .getCollection("TraceDTO");
+
+    List<Bson> pipeline = new ArrayList<>();
+    LocalDateTime currentTime = LocalDateTime.now();
+
+    if (from != null && to != null) {
+      // Date-wise filtering
+      ZonedDateTime fromZoned = from.atStartOfDay(ZoneId.systemDefault()).toInstant().atZone(ZoneId.systemDefault());
+      ZonedDateTime toZoned = to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()
+          .atZone(ZoneId.systemDefault());
+
+      pipeline.add(Aggregates.match(Filters.and(
+          Filters.regex("spans.attributes.key", "^messaging", "m"),
+          Filters.in("serviceName", serviceNames),
+          Filters.gte("createdTime", Date.from(fromZoned.toInstant())),
+          Filters.lt("createdTime", Date.from(toZoned.toInstant())))));
+    } else if (minutesAgo > 0) {
+      // Time-based filtering
+      LocalDateTime thresholdTime = currentTime.minusMinutes(minutesAgo);
+      ZonedDateTime thresholdZoned = thresholdTime.atZone(ZoneId.systemDefault());
+
+      pipeline.add(Aggregates.match(Filters.and(
+          Filters.regex("spans.attributes.key", "^messaging", "m"),
+          Filters.in("serviceName", serviceNames),
+          Filters.gte("createdTime", Date.from(thresholdZoned.toInstant())))));
+    }
+
+    pipeline.add(Aggregates.unwind("$spans"));
+    pipeline.add(Aggregates.match(Filters.and(
+        Filters.in("serviceName", serviceNames),
+        Filters.regex("spans.attributes.key", "^messaging", "m"))));
+    pipeline.add(Aggregates.project(Projections.fields(
+        Projections.computed("serviceName", "$serviceName"),
+        Projections.computed("startTimeUnixNano", "$spans.startTimeUnixNano"),
+        Projections.computed("endTimeUnixNano", "$spans.endTimeUnixNano"))));
+
+    AggregateIterable<Document> result = collection.aggregate(pipeline);
+
+    Map<String, KafkaMetrics> kafkaMetricsMap = new HashMap<>();
+
+    result.forEach((Consumer<? super Document>) document -> {
+      String serviceName = getAsStringOrFallback(document, "serviceName", "Unknown");
+
+      String startTimeUnixNanoStr = document.getString("startTimeUnixNano");
+      String endTimeUnixNanoStr = document.getString("endTimeUnixNano");
+
+      long startTimeUnixNano = Long.parseLong(startTimeUnixNanoStr);
+      long endTimeUnixNano = Long.parseLong(endTimeUnixNanoStr);
+
+      ZonedDateTime startIST = Instant.ofEpochSecond(0, startTimeUnixNano).atZone(ZoneId.of("Asia/Kolkata"));
+      ZonedDateTime endIST = Instant.ofEpochSecond(0, endTimeUnixNano).atZone(ZoneId.of("Asia/Kolkata"));
+      long kafkaDuration = ChronoUnit.MILLIS.between(startIST, endIST);
+
+      String key = serviceName;
+      KafkaMetrics kafkaMetrics = kafkaMetricsMap.computeIfAbsent(key, k -> new KafkaMetrics(serviceName, 0L, 0L));
+
+      kafkaMetrics.setKafkaCallCount(kafkaMetrics.getKafkaCallCount() + 1);
+      if (kafkaDuration > 5) {
+        kafkaMetrics.setKafkaPeakLatency(kafkaMetrics.getKafkaPeakLatency() + 1);
+      }
+    });
+
+    List<KafkaMetrics> resultList = new ArrayList<>(kafkaMetricsMap.values());
+
+    return resultList;
+  }
+
+  public List<KafkaMetrics> getAllKafkaPeakLatency(List<String> serviceNames, LocalDate from, LocalDate to,
+      int minutesAgo, int minPeakLatency, int maxPeakLatency) {
+    MongoCollection<Document> collection = mongoClient.getDatabase("OtelTrace")
+        .getCollection("TraceDTO");
+
+    List<Bson> pipeline = new ArrayList<>();
+    LocalDateTime currentTime = LocalDateTime.now();
+
+    if (from != null && to != null) {
+      // Date-wise filtering
+      ZonedDateTime fromZoned = from.atStartOfDay(ZoneId.systemDefault()).toInstant().atZone(ZoneId.systemDefault());
+      ZonedDateTime toZoned = to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()
+          .atZone(ZoneId.systemDefault());
+
+      pipeline.add(Aggregates.match(Filters.and(
+          Filters.regex("spans.attributes.key", "^messaging", "m"),
+          Filters.in("serviceName", serviceNames),
+          Filters.gte("createdTime", Date.from(fromZoned.toInstant())),
+          Filters.lt("createdTime", Date.from(toZoned.toInstant())))));
+    } else if (minutesAgo > 0) {
+      // Time-based filtering
+      LocalDateTime thresholdTime = currentTime.minusMinutes(minutesAgo);
+      ZonedDateTime thresholdZoned = thresholdTime.atZone(ZoneId.systemDefault());
+
+      pipeline.add(Aggregates.match(Filters.and(
+          Filters.regex("spans.attributes.key", "^messaging", "m"),
+          Filters.in("serviceName", serviceNames),
+          Filters.gte("createdTime", Date.from(thresholdZoned.toInstant())))));
+    }
+
+    pipeline.add(Aggregates.unwind("$spans"));
+    pipeline.add(Aggregates.match(Filters.and(
+        Filters.in("serviceName", serviceNames),
+        Filters.regex("spans.attributes.key", "^messaging", "m"))));
+    pipeline.add(Aggregates.project(Projections.fields(
+        Projections.computed("serviceName", "$serviceName"),
+        Projections.computed("startTimeUnixNano", "$spans.startTimeUnixNano"),
+        Projections.computed("endTimeUnixNano", "$spans.endTimeUnixNano"))));
+
+    AggregateIterable<Document> result = collection.aggregate(pipeline);
+
+    Map<String, KafkaMetrics> kafkaMetricsMap = new HashMap<>();
+
+    result.forEach((Consumer<? super Document>) document -> {
+      String serviceName = getAsStringOrFallback(document, "serviceName", "Unknown");
+
+      String startTimeUnixNanoStr = document.getString("startTimeUnixNano");
+      String endTimeUnixNanoStr = document.getString("endTimeUnixNano");
+
+      long startTimeUnixNano = Long.parseLong(startTimeUnixNanoStr);
+      long endTimeUnixNano = Long.parseLong(endTimeUnixNanoStr);
+
+      ZonedDateTime startIST = Instant.ofEpochSecond(0, startTimeUnixNano).atZone(ZoneId.of("Asia/Kolkata"));
+      ZonedDateTime endIST = Instant.ofEpochSecond(0, endTimeUnixNano).atZone(ZoneId.of("Asia/Kolkata"));
+      long kafkaDuration = ChronoUnit.MILLIS.between(startIST, endIST);
+
+      String key = serviceName;
+      KafkaMetrics kafkaMetrics = kafkaMetricsMap.computeIfAbsent(key, k -> new KafkaMetrics(serviceName, 0L, 0L));
+
+      // kafkaMetrics.setKafkaCallCount(kafkaMetrics.getKafkaCallCount() + 1);
+      // if (kafkaDuration > peakLatency) {
+      //   kafkaMetrics.setKafkaPeakLatency(kafkaMetrics.getKafkaPeakLatency() + 1);
+      // }
+      if (kafkaDuration >= minPeakLatency && kafkaDuration <= maxPeakLatency) {
+        kafkaMetrics.setKafkaPeakLatency(kafkaMetrics.getKafkaPeakLatency() + 1);
+      }
+    });
+
+    List<KafkaMetrics> resultList = new ArrayList<>(kafkaMetricsMap.values());
+
+    return resultList;
+  }
+
+
 }
