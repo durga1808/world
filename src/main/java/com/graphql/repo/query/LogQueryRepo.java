@@ -5,8 +5,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
-
+import java.util.stream.Collectors;
 
 import com.graphql.entity.queryentity.log.LogDTO;
 import com.graphql.entity.queryentity.log.LogQuery;
@@ -15,6 +16,9 @@ import io.quarkus.mongodb.panache.PanacheMongoRepository;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
 
 
 
@@ -118,6 +122,34 @@ public List<LogDTO> filterServiceLogs(LogQuery query, int page, int pageSize, Lo
         .list();
 
 }
+//  public List<LogDTO> FilterLogsByCreatedTimeDesc(List<LogDTO> logs) {
+//         System.out.println("------getFilterLogsByCreatedTimeDesc---------" + logs.size());
+//         return logs.stream()
+//                 .sorted(Comparator.comparing(LogDTO::getCreatedTime, Comparator.reverseOrder()))
+//                 .collect(Collectors.toList());
+//     }
+
+   
+//     public List<LogDTO> getFilterLogssAsc(List<LogDTO> logs) {
+//         return logs.stream()
+//                 .sorted(Comparator.comparing(LogDTO::getCreatedTime))
+//                 .collect(Collectors.toList());
+//     }
+
+//     public List<LogDTO> getFilterErrorLogs(List<LogDTO> logs) {
+//         return logs.stream()
+//                 .sorted(Comparator
+//                         .comparing((LogDTO log) -> {
+//                             String severityText = log.getSeverityText();
+//                             return ("ERROR".equals(severityText) || "SEVERE".equals(severityText)) ? 0 : 1;
+//                         })
+//                         .thenComparing(LogDTO::getCreatedTime, Comparator.nullsLast(Comparator.reverseOrder()))
+//                 )
+//                 .collect(Collectors.toList());
+//     }
+
+}
 
 
- }
+
+ 

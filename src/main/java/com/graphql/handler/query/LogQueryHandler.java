@@ -265,7 +265,7 @@ public class LogQueryHandler {
     //     return panacheQuery.page(Page.of(page, pageSize)).list();
     // }
 
-    public List<LogDTO>     filterServiceName(LogQuery query, int page, int pageSize, LocalDate fromDate, LocalDate toDate, Integer minutesAgo) {
+    public List<LogDTO>     filterServiceName(LogQuery query, int page, int pageSize, LocalDate fromDate, LocalDate toDate, Integer minutesAgo,String sortOrder) {
     
     return logQueryRepo.filterServiceLogs(query, page, pageSize, fromDate, toDate, minutesAgo);
     }

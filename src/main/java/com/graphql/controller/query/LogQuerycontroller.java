@@ -23,7 +23,9 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 
 
@@ -293,51 +295,51 @@ public List<LogDTO> filterLogs(
     @Name("from") LocalDate fromDate,
     @Name("to") LocalDate toDate,
     @Name("minutesAgo") Integer minutesAgo,
-    @Name("sortorder") String sortOrder) {
-     
-    
+    @Name("sortOrder") String sortOrder) {
+  
 
 
-        List<LogDTO> logDTOs = logQueryHandler.filterServiceName(query, page, pageSize, fromDate, toDate, minutesAgo);
-        List<LogDTO> logDTOs2 = new ArrayList<>();
-        
-        if (sortOrder != null) {
-            switch (sortOrder.trim().toLowerCase()) {
-                case "new":
-                    logDTOs2 = logDTOs.stream()
-                            .sorted(Comparator.comparing(LogDTO::getCreatedTime).reversed())
-                            .collect(Collectors.toList());
-                    break;
-                case "old":
-                    logDTOs2 = logDTOs.stream()
-                            .sorted(Comparator.comparing(LogDTO::getCreatedTime))
-                            .collect(Collectors.toList());
-                    break;
-                case "error":
-                    Comparator<LogDTO> errorComparator = Comparator
-                            .comparing((LogDTO log) -> {
-                                String severity = log.getSeverityText();
-                                return ("ERROR".equals(severity) || "SEVERE".equals(severity)) ? 0 : 1;
-                            })
-                            .thenComparing(LogDTO::getCreatedTime, Comparator.nullsLast(Comparator.reverseOrder()));
-        
-                    logDTOs2 = logDTOs.stream()
-                            .sorted(errorComparator)
-                            .collect(Collectors.toList());
-                    break;
-                default:
-                    // Handle invalid sortOrder (optional)
-                    throw new IllegalArgumentException("Invalid sortOrder: " + sortOrder);
+    List<LogDTO> logDTOs = logQueryHandler.filterServiceName(query, page, pageSize, fromDate, toDate, minutesAgo,sortOrder);
+           
+
+            if ("new".equalsIgnoreCase(sortOrder)) {
+                logDTOs = FilterLogsByCreatedTimeDesc(logDTOs);
+            } else if ("old".equalsIgnoreCase(sortOrder)) {
+                logDTOs = FilterLogssAsc(logDTOs);
+            } else if ("error".equalsIgnoreCase(sortOrder)) {
+                logDTOs = FilterErrorLogs(logDTOs);
+            } else {
+                throw new IllegalArgumentException("Invalid sortOrder parameter. Use 'new', 'old', or 'error'.");
             }
-        } else {
-            logDTOs2 = logDTOs; // No sorting needed, keep the original order
-        }
-        
-        return logDTOs2;
+            return logDTOs;
     }
-        
+   
+     
 
 
+private List<LogDTO> FilterErrorLogs(List<LogDTO> logDTOs) {
+    return logDTOs.stream()
+    .sorted(Comparator
+            .comparing((LogDTO log) -> {
+                String severityText = log.getSeverityText();
+                return ("ERROR".equals(severityText) || "SEVERE".equals(severityText)) ? 0 : 1;
+            })
+            .thenComparing(LogDTO::getCreatedTime, Comparator.nullsLast(Comparator.reverseOrder()))
+    )
+    .collect(Collectors.toList());
+}
+
+private List<LogDTO> FilterLogssAsc(List<LogDTO> logDTOs) {
+    return logDTOs.stream()
+    .sorted(Comparator.comparing(LogDTO::getCreatedTime))
+    .collect(Collectors.toList());
+}
+
+private List<LogDTO> FilterLogsByCreatedTimeDesc(List<LogDTO> logDTOs) {
+    System.out.println("------getFilterLogsByCreatedTimeDesc---------"+logDTOs.size());
+    return logDTOs.stream()
+            .sorted(Comparator.comparing(LogDTO::getCreatedTime, Comparator.reverseOrder()))
+            .collect(Collectors.toList());}
 
 @Query
 public List<LogDTO> searchFunction(@Name("keyword") String keyword, 
