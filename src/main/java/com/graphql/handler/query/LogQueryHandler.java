@@ -3,11 +3,19 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
+import com.graphql.entity.otellog.ScopeLogs;
+import com.graphql.entity.otellog.scopeLogs.LogRecord;
 import com.graphql.entity.queryentity.log.LogDTO;
+import com.graphql.entity.queryentity.log.LogMetrics;
 import com.graphql.entity.queryentity.log.LogQuery;
 import com.graphql.repo.query.LogQueryRepo;
 import com.mongodb.client.MongoClient;
@@ -257,48 +265,51 @@ public class LogQueryHandler {
     //     return panacheQuery.page(Page.of(page, pageSize)).list();
     // }
 
-    public List<LogDTO> filterServiceName(LogQuery query, int page, int pageSize, LocalDate fromDate, LocalDate toDate, Integer minutesAgo) {
-        Instant fromInstant;
-        Instant toInstant;
+    public List<LogDTO>     filterServiceName(LogQuery query, int page, int pageSize, LocalDate fromDate, LocalDate toDate, Integer minutesAgo) {
     
-        if (fromDate != null && toDate != null) {
-            Instant startOfFrom = fromDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
-            Instant startOfTo = toDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
-    
-            fromInstant = startOfFrom.isBefore(startOfTo) ? startOfFrom : startOfTo;
-            toInstant = startOfFrom.isBefore(startOfTo) ? startOfTo : startOfFrom;
-    
-            toInstant = toInstant.plus(1, ChronoUnit.DAYS);
-        } else if (minutesAgo > 0) {
-            Instant currentInstant = Instant.now();
-            Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
-    
-            // Calculate the start of the current day
-            Instant startOfCurrentDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
-    
-            if (minutesAgoInstant.isBefore(startOfCurrentDay)) {
-                fromInstant = startOfCurrentDay;
-            } else {
-                fromInstant = minutesAgoInstant;
-            }
-    
-            toInstant = currentInstant;
-        } else {
-            throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
-        }
-    
-        PanacheQuery<LogDTO> panacheQuery = LogDTO.find(
-            "serviceName in :serviceNames and severityText in :severityTexts " +
-            "and createdTime >= :fromDate and createdTime <= :toDate",
-            Parameters
-                .with("serviceNames", query.getServiceName())
-                .and("severityTexts", query.getSeverityText())
-                .and("fromDate", fromInstant)
-                .and("toDate", toInstant)
-        );
-    
-        return panacheQuery.page(Page.of(page, pageSize)).list();
+    return logQueryRepo.filterServiceLogs(query, page, pageSize, fromDate, toDate, minutesAgo);
     }
+        //     Instant fromInst
+    //     Instant toInstant;
+    
+    //     if (fromDate != null && toDate != null) {
+    //         Instant startOfFrom = fromDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
+    //         Instant startOfTo = toDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
+    
+    //         fromInstant = startOfFrom.isBefore(startOfTo) ? startOfFrom : startOfTo;
+    //         toInstant = startOfFrom.isBefore(startOfTo) ? startOfTo : startOfFrom;
+    
+    //         toInstant = toInstant.plus(1, ChronoUnit.DAYS);
+    //     } else if (minutesAgo > 0) {
+    //         Instant currentInstant = Instant.now();
+    //         Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+    
+    //         // Calculate the start of the current day
+    //         Instant startOfCurrentDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
+    
+    //         if (minutesAgoInstant.isBefore(startOfCurrentDay)) {
+    //             fromInstant = startOfCurrentDay;
+    //         } else {
+    //             fromInstant = minutesAgoInstant;
+    //         }
+    
+    //         toInstant = currentInstant;
+    //     } else {
+    //         throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
+    //     }
+    
+    //     PanacheQuery<LogDTO> panacheQuery = LogDTO.find(
+    //         "serviceName in :serviceNames and severityText in :severityTexts " +
+    //         "and createdTime >= :fromDate and createdTime <= :toDate",
+    //         Parameters
+    //             .with("serviceNames", query.getServiceName())
+    //             .and("severityTexts", query.getSeverityText())
+    //             .and("fromDate", fromInstant)
+    //             .and("toDate", toInstant)
+    //     );
+    
+    //     return panacheQuery.page(Page.of(page, pageSize)).list();
+    // }
 
 //     //filter log desec
 //     public List<LogDTO> getFilterLogsByCreatedTimeDesc(List<LogDTO> logs) {
@@ -327,7 +338,166 @@ public class LogQueryHandler {
 //             )
 //             .collect(Collectors.toList());
 //     }
-   
-
+// }
+// public List<LogMetrics> getLogMetricCount(int minutesAgo, LocalDate fromDate, LocalDate toDate, List<String> serviceNameList) {
     
+//     List<LogDTO> logList = logQueryRepo.listAll();
+//     Map<String, LogMetrics> metricsMap = new HashMap<>();
+
+//     Instant fromInstant;
+//     Instant toInstant;
+
+//     if (fromDate != null && toDate != null) {
+//         Instant startOfFrom = fromDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
+//         Instant startOfTo = toDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+//         fromInstant = startOfFrom.isBefore(startOfTo) ? startOfFrom : startOfTo;
+//         toInstant = startOfFrom.isBefore(startOfTo) ? startOfTo : startOfFrom;
+
+//         toInstant = toInstant.plus(1, ChronoUnit.DAYS);
+//     } else if (minutesAgo > 0) {
+//         Instant currentInstant = Instant.now();
+//         Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+
+//         Instant startOfCurrentDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
+//         fromInstant = minutesAgoInstant.isBefore(startOfCurrentDay) ? startOfCurrentDay : minutesAgoInstant;
+//         toInstant = currentInstant;
+//     } else {
+//         throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
+//     }
+
+//     for (LogDTO logDTO : logList) {
+//         Date logCreateTime = logDTO.getCreatedTime();
+//         if (logCreateTime != null) {
+//             Instant logInstant = logCreateTime.toInstant();
+
+//             if (logInstant.isAfter(fromInstant) && logInstant.isBefore(toInstant)
+//                     && serviceNameList.contains(logDTO.getServiceName())) {
+//                 String serviceName = logDTO.getServiceName();
+//                 LogMetrics metrics = metricsMap.computeIfAbsent(serviceName, k -> new LogMetrics());
+
+//                 // Increment counts based on severity
+//                 calculateCallCounts(logDTO, metrics);
+//             }
+//         }
+//     }
+
+//     // Print metrics for debugging
+//     for (Map.Entry<String, LogMetrics> entry : metricsMap.entrySet()) {
+//         LogMetrics metrics = entry.getValue();
+//         System.out.println(String.format("Service: %s, Error Count: %d, Warn Count: %d, Debug Count: %d",
+//                 entry.getKey(), metrics.getErrorCallCount(), metrics.getWarnCallCount(), metrics.getDebugCallCount()));
+//     }
+
+//     return new ArrayList<>(metricsMap.values());
+// }
+// private void calculateCallCounts(LogDTO logDTO, LogMetrics metrics) {
+//     if (logDTO != null && logDTO.getScopeLogs() != null) {
+//         for (ScopeLogs scopeLogs : logDTO.getScopeLogs()) {
+//             if (scopeLogs != null && scopeLogs.getLogRecords() != null) {
+//                 for (LogRecord logRecord : scopeLogs.getLogRecords()) {
+//                     if (logRecord != null) {
+//                         String severityText = logRecord.getSeverityText();
+//                         if (severityText != null) {
+//                             switch (severityText.toUpperCase()) {
+//                                 case "ERROR":
+//                                     metrics.setErrorCallCount(metrics.getErrorCallCount() + 1);
+//                                     break;
+//                                 case "WARN":
+//                                     metrics.setWarnCallCount(metrics.getWarnCallCount() + 1);
+//                                     break;
+//                                 case "DEBUG":
+//                                     metrics.setDebugCallCount(metrics.getDebugCallCount() + 1);
+//                                     break;
+//                                 // Add other cases as needed
+//                                 default:
+//                                     // Handle other severityText values if needed
+//                                     break;
+//                             }
+//                         } else {
+//                             System.out.println("SeverityText is null");
+//                             // Handle the case when severityText is null
+//                         }
+//                     } else {
+//                         System.out.println("LogRecord is null");
+//                         // Handle the case when logRecord is null
+//                     }
+//                 }
+//             } else {
+//                 System.out.println("ScopeLogs or LogRecords is null");
+//                 // Handle the case when scopeLogs or LogRecords is null
+//             }
+//         }
+//     } else {
+//         System.out.println("LogDTO is null");
+//         // Handle the case when logDTO is null
+//     }
+// }
+public List<LogMetrics> getLogMetricCount(int minutesAgo, LocalDate from, LocalDate to, List<String> serviceNameList) {
+    System.out.println("from: " + from);
+    System.out.println("to: " + to);
+    System.out.println("minutesAgo: " + minutesAgo);
+
+    List<LogDTO> logList = logQueryRepo.listAll();
+    Map<String, LogMetrics> metricsMap = new HashMap<>();
+
+    Instant fromInstant;
+    Instant toInstant;
+
+    if (from != null && to != null) {
+        fromInstant = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
+        toInstant = to.atStartOfDay(ZoneId.systemDefault()).toInstant().plus(1, ChronoUnit.DAYS);
+    } else if (minutesAgo > 0) {
+        Instant currentInstant = Instant.now();
+        Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+        Instant startOfCurrentDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+        fromInstant = minutesAgoInstant.isBefore(startOfCurrentDay) ? startOfCurrentDay : minutesAgoInstant;
+        toInstant = currentInstant;
+    } else {
+        throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
+    }
+
+    for (LogDTO logDTO : logList) {
+        Date logCreateTime = logDTO.getCreatedTime();
+        if (logCreateTime != null) {
+            Instant logInstant = logCreateTime.toInstant();
+
+            if (logInstant.isAfter(fromInstant) && logInstant.isBefore(toInstant)
+                    && serviceNameList.contains(logDTO.getServiceName())) {
+                String serviceName = logDTO.getServiceName();
+                LogMetrics metrics = metricsMap.computeIfAbsent(serviceName, k -> new LogMetrics(serviceName, 0L, 0L, 0L));
+
+                calculateCallCounts(logDTO, metrics);
+            }
+        }
+    }
+
+    return new ArrayList<>(metricsMap.values());
 }
+
+private void calculateCallCounts(LogDTO logDTO, LogMetrics metrics) {
+    for (ScopeLogs scopeLogs : logDTO.getScopeLogs()) {
+        for (LogRecord logRecord : scopeLogs.getLogRecords()) {
+            String severityText = logRecord.getSeverityText();
+            switch (severityText) {
+                case "ERROR":
+                case "SEVERE":
+                    metrics.setErrorCallCount(metrics.getErrorCallCount() + 1);
+                    break;
+                case "WARN":
+                    metrics.setWarnCallCount(metrics.getWarnCallCount() + 1);
+                    break;
+                case "DEBUG":
+                    metrics.setDebugCallCount(metrics.getDebugCallCount() + 1);
+                    break;
+                // Add more cases if needed
+            }
+        }
+    }
+}
+
+}
+// ... (other methods)
+
+   

@@ -2,14 +2,18 @@ package com.graphql.controller.query;
 
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
+
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Name;
 import org.eclipse.microprofile.graphql.Query;
 
 
 import com.graphql.entity.queryentity.log.LogDTO;
+import com.graphql.entity.queryentity.log.LogMetrics;
 import com.graphql.entity.queryentity.log.LogQuery;
 
 import com.graphql.handler.query.LogQueryHandler;
@@ -290,32 +294,48 @@ public List<LogDTO> filterLogs(
     @Name("to") LocalDate toDate,
     @Name("minutesAgo") Integer minutesAgo,
     @Name("sortorder") String sortOrder) {
+     
+    
 
-    List<LogDTO> logs = logQueryHandler.filterServiceName(query, page, pageSize, fromDate, toDate, minutesAgo);
 
-    if (sortOrder != null) {
-        switch (sortOrder.toLowerCase()) {
-            case "new":
-                logs.sort(Comparator.comparing(LogDTO::getCreatedTime).reversed());
-                break;
-            case "old":
-                logs.sort(Comparator.comparing(LogDTO::getCreatedTime));
-                break;
-            case "error":
-                logs.sort(Comparator
-                        .comparing((LogDTO log) -> ("ERROR".equals(log.getSeverityText()) || "SEVERE".equals(log.getSeverityText())) ? 0 : 1)
-                        .thenComparing(LogDTO::getCreatedTime, Comparator.nullsLast(Comparator.reverseOrder()))
-                );
-                break;
-            default:
-                // Handle invalid sortOrder (optional)
-                throw new IllegalArgumentException("Invalid sortOrder: " + sortOrder);
+        List<LogDTO> logDTOs = logQueryHandler.filterServiceName(query, page, pageSize, fromDate, toDate, minutesAgo);
+        List<LogDTO> logDTOs2 = new ArrayList<>();
+        
+        if (sortOrder != null) {
+            switch (sortOrder.trim().toLowerCase()) {
+                case "new":
+                    logDTOs2 = logDTOs.stream()
+                            .sorted(Comparator.comparing(LogDTO::getCreatedTime).reversed())
+                            .collect(Collectors.toList());
+                    break;
+                case "old":
+                    logDTOs2 = logDTOs.stream()
+                            .sorted(Comparator.comparing(LogDTO::getCreatedTime))
+                            .collect(Collectors.toList());
+                    break;
+                case "error":
+                    Comparator<LogDTO> errorComparator = Comparator
+                            .comparing((LogDTO log) -> {
+                                String severity = log.getSeverityText();
+                                return ("ERROR".equals(severity) || "SEVERE".equals(severity)) ? 0 : 1;
+                            })
+                            .thenComparing(LogDTO::getCreatedTime, Comparator.nullsLast(Comparator.reverseOrder()));
+        
+                    logDTOs2 = logDTOs.stream()
+                            .sorted(errorComparator)
+                            .collect(Collectors.toList());
+                    break;
+                default:
+                    // Handle invalid sortOrder (optional)
+                    throw new IllegalArgumentException("Invalid sortOrder: " + sortOrder);
+            }
+        } else {
+            logDTOs2 = logDTOs; // No sorting needed, keep the original order
         }
+        
+        return logDTOs2;
     }
-
-    return logs;
-}
-
+        
 
 
 
@@ -328,4 +348,23 @@ public List<LogDTO> searchFunction(@Name("keyword") String keyword,
         @Name("minutesAgo") Integer minutesAgo) {
           return logQueryHandler.searchFunction(keyword,page,pageSize,fromDate,toDate,minutesAgo);
         }
+
+
+@Query
+public List<LogMetrics> logMetricsCount(
+    @Name("startDate") LocalDate startDate,
+    @Name("endDate") LocalDate endDate,
+    @Name("serviceNameList") List<String> serviceNameList,
+    @Name("minutesAgo") int minutesAgo
+) {
+    // Assuming logQueryHandler has a method similar to getLogMetricCount
+    return logQueryHandler.getLogMetricCount(minutesAgo, startDate, endDate, serviceNameList);
 }
+
+
+
+
+
+}
+
+
