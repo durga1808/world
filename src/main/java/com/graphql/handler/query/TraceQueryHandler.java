@@ -7,12 +7,15 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.bson.Document;
 
 import com.graphql.entity.queryentity.trace.TraceDTO;
+import com.graphql.entity.queryentity.trace.TraceMetrics;
 import com.graphql.entity.queryentity.trace.TraceQuery;
 import com.graphql.repo.query.TraceQueryRepo;
 import com.mongodb.client.MongoClient;
@@ -231,4 +234,115 @@ public List<TraceDTO> getTracesByStatusCodeAndDuration(TraceQuery query, int pag
             .sorted(Comparator.comparing(TraceDTO::getDuration, Comparator.reverseOrder()))
             .collect(Collectors.toList());
       }
+
+
+//trace summery chart count
+public List<TraceMetrics> getAllTraceMetricCount(List<String> serviceNameList, LocalDate fromDate, LocalDate toDate, Integer minutesAgo) {
+  List<TraceDTO> traces = fetchTracesByServiceName(serviceNameList);
+
+  Instant fromInstant;
+  Instant toInstant;
+
+  if (fromDate != null && toDate != null) {
+      fromInstant = fromDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
+      toInstant = toDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+  } else if (minutesAgo != null && minutesAgo > 0) {
+      Instant currentInstant = Instant.now();
+      fromInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+      toInstant = currentInstant;
+  } else {
+      throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
+  }
+
+  return traces.stream()
+          .filter(trace -> trace.getCreatedTime() != null && trace.getCreatedTime().toInstant().isAfter(fromInstant) && trace.getCreatedTime().toInstant().isBefore(toInstant))
+          .collect(Collectors.groupingBy(TraceDTO::getServiceName))
+          .entrySet().stream()
+          .map(entry -> {
+              String serviceName = entry.getKey();
+              List<TraceDTO> serviceTraces = entry.getValue();
+
+              if (serviceTraces != null) {
+                  long totalErrorCalls = serviceTraces.stream()
+                          .filter(trace -> trace != null && trace.getStatusCode() != null && trace.getStatusCode() >= 400 && trace.getStatusCode() <= 599)
+                          .count();
+
+                  long totalSuccessCalls = serviceTraces.stream()
+                          .filter(trace -> trace != null && trace.getStatusCode() != null && trace.getStatusCode() >= 200 && trace.getStatusCode() <= 299)
+                          .count();
+
+                  long peakLatencyCount = serviceTraces.stream()
+                          .filter(trace -> trace != null && trace.getDuration() != null && trace.getDuration() > 500)
+                          .count();
+
+                  long apiCallCount = totalErrorCalls + totalSuccessCalls;
+
+                  return new TraceMetrics(serviceName, apiCallCount, peakLatencyCount, totalErrorCalls, totalSuccessCalls);
+              } else {
+                  // System.out.println("serviceTraces is null for serviceName: " + serviceName);
+                  return new TraceMetrics(serviceName, 0L, 0L, 0L, 0L);
+              }
+          })
+          .collect(Collectors.toList());
+}
+
+public static List<TraceDTO> fetchTracesByServiceName(List<String> serviceNameList) {
+  return TraceDTO.list("serviceName in ?1", serviceNameList);
+}
+
+
+
+//trace peack latency count
+public static List<TraceMetrics> getPeakLatency(List<String> serviceNameList, LocalDate fromDate, LocalDate toDate, Integer minutesAgo, Long minPeakLatency, Long maxPeakLatency) {
+  List<TraceDTO> traces = fetchTracesByServiceName(serviceNameList);
+
+  Instant fromInstant;
+  Instant toInstant;
+
+  if (fromDate != null && toDate != null) {
+      fromInstant = fromDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
+      toInstant = toDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+  } else if (minutesAgo != null && minutesAgo > 0) {
+      Instant currentInstant = Instant.now();
+      fromInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+      toInstant = currentInstant;
+  } else {
+      throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
+  }
+
+  return traces.stream()
+          .filter(trace -> trace.getCreatedTime() != null && trace.getCreatedTime().toInstant().isAfter(fromInstant) && trace.getCreatedTime().toInstant().isBefore(toInstant))
+          .collect(Collectors.groupingBy(TraceDTO::getServiceName))
+          .entrySet().stream()
+          .map(entry -> {
+              String serviceName = entry.getKey();
+              List<TraceDTO> serviceTraces = entry.getValue();
+
+              if (serviceTraces != null) {
+                  long totalErrorCalls = serviceTraces.stream()
+                          .filter(trace -> trace != null && trace.getStatusCode() != null && trace.getStatusCode() >= 400 && trace.getStatusCode() <= 599)
+                          .count();
+
+                  long totalSuccessCalls = serviceTraces.stream()
+                          .filter(trace -> trace != null && trace.getStatusCode() != null && trace.getStatusCode() >= 200 && trace.getStatusCode() <= 299)
+                          .count();
+
+                  long peakLatencyCount = serviceTraces.stream()
+                          .filter(trace -> trace != null && trace.getDuration() != null && trace.getDuration() >= minPeakLatency && trace.getDuration() <= maxPeakLatency)
+                          .count();
+
+                          long apiCallCount = serviceTraces.size();
+                  return new TraceMetrics(serviceName, apiCallCount, peakLatencyCount, totalErrorCalls, totalSuccessCalls);
+              } else {
+                  // System.out.println("serviceTraces is null for serviceName: " + serviceName);
+                  return new TraceMetrics(serviceName, 0L, 0L, 0L, 0L);
+              }
+          })
+          .collect(Collectors.toList());
+}
+
+
+
+
+
 }

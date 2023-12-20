@@ -15,12 +15,12 @@ import org.eclipse.microprofile.graphql.Query;
 
 
 import com.graphql.entity.queryentity.trace.TraceDTO;
+import com.graphql.entity.queryentity.trace.TraceMetrics;
 import com.graphql.entity.queryentity.trace.TraceQuery;
 import com.graphql.handler.query.TraceQueryHandler;
 import com.graphql.repo.query.TraceQueryRepo;
 
 import jakarta.inject.Inject;
-import jakarta.ws.rs.core.Response;
 
 
 @GraphQLApi
@@ -57,6 +57,35 @@ public class TraceQueryController {
     
     //     return traceQueryHandler.getTracesByStatusCodeAndDuration(minStatusCode, maxStatusCode, duration, serviceNames, methodNames);
     // }
+
+
+
+    
+  @Query
+  public List<TraceMetrics> getTraceMetricCount(
+     @Name("serviceNameList") List<String> serviceNameList,
+     @Name("from") LocalDate fromDate,
+    @Name("to") LocalDate toDate,
+    @Name("minutesAgo") Integer minutesAgo
+  ) {
+    return traceQueryHandler.getAllTraceMetricCount(serviceNameList,fromDate,toDate,minutesAgo);
+  }
+
+
+
+  @Query
+  public List<TraceMetrics> getPeakLatency(
+      @Name("serviceNameList") List<String> serviceNameList,
+      @Name("minpeakLatency") Long minpeakLatency,
+      @Name("maxpeakLatency") Long maxpeakLatency,
+      @Name("from") LocalDate fromDate,
+      @Name("to") LocalDate toDate,
+      @Name("minutesAgo") Integer minutesAgo
+  ) {
+      return  TraceQueryHandler.getPeakLatency(serviceNameList, fromDate, toDate, minutesAgo, minpeakLatency, maxpeakLatency);
+  }
+  
+  
     
 @Query
 public List<TraceDTO> filterTrace(
