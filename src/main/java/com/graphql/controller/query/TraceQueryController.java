@@ -13,7 +13,8 @@ import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Name;
 import org.eclipse.microprofile.graphql.Query;
 
-
+import com.graphql.entity.queryentity.trace.DBMetric;
+import com.graphql.entity.queryentity.trace.KafkaMetrics;
 import com.graphql.entity.queryentity.trace.TraceDTO;
 import com.graphql.entity.queryentity.trace.TraceMetrics;
 import com.graphql.entity.queryentity.trace.TraceQuery;
@@ -21,6 +22,7 @@ import com.graphql.handler.query.TraceQueryHandler;
 import com.graphql.repo.query.TraceQueryRepo;
 
 import jakarta.inject.Inject;
+import jakarta.ws.rs.QueryParam;
 
 
 @GraphQLApi
@@ -150,6 +152,58 @@ public List<TraceDTO> filterTrace(
 
 //     return traces;
 // }
+
+
+@Query
+public List<DBMetric> getDBTraceMetricCount(
+            @Name("from") LocalDate from,
+            @Name("to") LocalDate to,
+            @Name("minutesAgo") int minutesAgo,
+            @Name("serviceNameList") List<String> serviceNames) {
+        return traceQueryHandler.getAllDBMetrics(serviceNames, from, to, minutesAgo);
+    }
+
+@Query
+public List<DBMetric> getDBTracePeakLatencyCount(
+            @Name("from") LocalDate from,
+            @Name("to") LocalDate to,
+            @Name("minutesAgo") int minutesAgo,
+            @Name("serviceNameList") List<String> serviceNames,
+            @Name("minPeakLatency") int minPeakLatency,
+            @Name("maxPeakLatency") int maxPeakLatency) {
+        return traceQueryHandler.getAllDBPeakLatency(serviceNames, from, to, minutesAgo, minPeakLatency, maxPeakLatency);
+    }
+
+
+
+@Query
+public List<KafkaMetrics> getKafkaTraceMetricCount(
+            @Name("serviceNameList") List<String> serviceName,
+            @Name("from") LocalDate from,
+            @Name("to") LocalDate to,
+            @Name("minutesAgo") int minutesAgo) {
+
+        List<KafkaMetrics> kafkaMetrics;
+
+        kafkaMetrics = traceQueryHandler.getAllKafkaMetrics(serviceName, from, to, minutesAgo);
+        return kafkaMetrics;
+    }
+
+
+    @Query
+    public List<KafkaMetrics> getKafkaTracePeakLatencyCount(
+        @Name("serviceNameList") List<String> serviceName,
+        @Name("from") LocalDate from,
+        @Name("to") LocalDate to,
+        @Name("minutesAgo") int minutesAgo, 
+        @Name("minPeakLatency") int minPeakLatency,
+        @Name("maxPeakLatency") int maxPeakLatency) {
+
+    List<KafkaMetrics> kafkaMetrics;
+
+    kafkaMetrics = traceQueryHandler.getAllKafkaPeakLatency(serviceName, from, to, minutesAgo, minPeakLatency, maxPeakLatency);
+    return kafkaMetrics;
+}
 
 
 @Query
