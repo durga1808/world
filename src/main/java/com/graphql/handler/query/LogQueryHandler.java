@@ -615,13 +615,13 @@ private void calculateCallCounts(LogDTO logDTO, LogMetrics metrics) {
 
   //sort orer decending 
   public List<LogDTO> getAllLogssOrderByCreatedTimeDesc(List<String> serviceNameList) {
-    return logQueryRepo.findAllOrderByCreatedTimeDesc(serviceNameList);
+    return logQueryRepo.findOrderByCreatedTimeDesc(serviceNameList);
   }
 
 
 //sort order ascending
 public List<LogDTO> getAllLogssAsc(List<String> serviceNameList) {
-    return logQueryRepo.findAllOrderByCreatedTimeAsc(serviceNameList);
+    return logQueryRepo.findOrderByCreatedTimeAsc(serviceNameList);
 }
 
 //sort order error data decending
