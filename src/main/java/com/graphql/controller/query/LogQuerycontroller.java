@@ -14,6 +14,7 @@ import org.eclipse.microprofile.graphql.Query;
 
 import com.graphql.entity.queryentity.log.LogDTO;
 import com.graphql.entity.queryentity.log.LogMetrics;
+import com.graphql.entity.queryentity.log.LogPage;
 import com.graphql.entity.queryentity.log.LogQuery;
 
 import com.graphql.handler.query.LogQueryHandler;
@@ -288,7 +289,7 @@ public class LogQuerycontroller{
 
 
 @Query
-public List<LogDTO> filterLogs(
+public LogPage filterLogs(
     @Name("query") LogQuery query,
     @Name("page") int page,
     @Name("pageSize") int pageSize,
@@ -299,7 +300,7 @@ public List<LogDTO> filterLogs(
   
 
 
-    List<LogDTO> logDTOs = logQueryHandler.filterServiceName(query, page, pageSize, fromDate, toDate, minutesAgo,sortOrder);
+    List<LogDTO> logDTOs = logQueryHandler.filterServiceName(query, fromDate, toDate, minutesAgo, sortOrder);
            
 
             if ("new".equalsIgnoreCase(sortOrder)) {
@@ -311,7 +312,14 @@ public List<LogDTO> filterLogs(
             } else {
                 throw new IllegalArgumentException("Invalid sortOrder parameter. Use 'new', 'old', or 'error'.");
             }
-            return logDTOs;
+
+        int totalCount = logDTOs.size();
+        int startIdx = (page - 1) * pageSize;
+    int endIdx = Math.min(startIdx + pageSize,  logDTOs.size());
+    List<LogDTO> paginatedLogs =  logDTOs.subList(startIdx, endIdx);
+
+    // Create and return LogPage object
+    return new LogPage(paginatedLogs, totalCount);
     }
    
      
