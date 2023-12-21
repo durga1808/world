@@ -86,42 +86,7 @@ public List<LogDTO> searchFunction(String keyword, int page, int pageSize, Local
 
 
 
-public List<LogDTO> filterServiceLogs(LogQuery query, int page, int pageSize, LocalDate fromDate, LocalDate toDate, Integer minutesAgo) {
 
-  Instant fromInstant;
-    Instant toInstant;
-
-    if (fromDate != null && toDate != null) {
-        Instant startOfFrom = fromDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
-        Instant startOfTo = toDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
-
-        fromInstant = startOfFrom.isBefore(startOfTo) ? startOfFrom : startOfTo;
-        toInstant = startOfFrom.isBefore(startOfTo) ? startOfTo : startOfFrom;
-
-        toInstant = toInstant.plus(1, ChronoUnit.DAYS);
-    } else if (minutesAgo > 0) {
-        Instant currentInstant = Instant.now();
-        Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
-
-        // Calculate the start of the current day
-        Instant startOfCurrentDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
-
-        if (minutesAgoInstant.isBefore(startOfCurrentDay)) {
-            fromInstant = startOfCurrentDay;
-        } else {
-            fromInstant = minutesAgoInstant;
-        }
-
-        toInstant = currentInstant;
-    } else {
-        throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
-    }
-
-    return find("{'createdTime': { $gte: ?1, $lte: ?2 }}", fromInstant, toInstant)
-        .page(Page.of(page, pageSize))
-        .list();
-
-}
 //  public List<LogDTO> FilterLogsByCreatedTimeDesc(List<LogDTO> logs) {
 //         System.out.println("------getFilterLogsByCreatedTimeDesc---------" + logs.size());
 //         return logs.stream()
