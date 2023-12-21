@@ -442,9 +442,60 @@ public class LogQueryHandler {
 
 
 
+// public List<LogDTO> filterServiceName(LogQuery query, LocalDate fromDate, LocalDate toDate, Integer minutesAgo, String sortOrder) {
+//     Instant fromInstant;
+//     Instant toInstant;
+//     if (fromDate != null && toDate != null) {
+//         Instant startOfFrom = fromDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
+//         Instant startOfTo = toDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+//         fromInstant = startOfFrom.isBefore(startOfTo) ? startOfFrom : startOfTo;
+//         toInstant = startOfFrom.isBefore(startOfTo) ? startOfTo : startOfFrom;
+
+//         toInstant = toInstant.plus(1, ChronoUnit.DAYS);
+//     } else if (minutesAgo > 0) {
+//         Instant currentInstant = Instant.now();
+//         Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+
+//         // Calculate the start of the current day
+//         Instant startOfCurrentDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+//         if (minutesAgoInstant.isBefore(startOfCurrentDay)) {
+//             fromInstant = startOfCurrentDay;
+//         } else {
+//             fromInstant = minutesAgoInstant;
+//         }
+
+//         toInstant = currentInstant;
+//     } else {
+//         throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
+//     }
+
+//     Bson match = Aggregates.match(
+//             Filters.and(
+//                     Filters.in("serviceName", query.getServiceName()),
+//                     Filters.in("severityText", query.getSeverityText()),
+//                     Filters.gte("createdTime", fromInstant),
+//                     Filters.lte("createdTime", toInstant)
+//             )
+//     );
+
+//     List<LogDTO> result = LogDTO.mongoCollection()
+//             .withDocumentClass(LogDTO.class)
+//             .aggregate(
+//                     Arrays.asList(match),
+//                     LogDTO.class
+//             )
+//             .into(new ArrayList<>());
+
+//     return result;
+// }
+
+
 public List<LogDTO> filterServiceName(LogQuery query, LocalDate fromDate, LocalDate toDate, Integer minutesAgo, String sortOrder) {
     Instant fromInstant;
     Instant toInstant;
+
     if (fromDate != null && toDate != null) {
         Instant startOfFrom = fromDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
         Instant startOfTo = toDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
@@ -457,7 +508,6 @@ public List<LogDTO> filterServiceName(LogQuery query, LocalDate fromDate, LocalD
         Instant currentInstant = Instant.now();
         Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
 
-        // Calculate the start of the current day
         Instant startOfCurrentDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
 
         if (minutesAgoInstant.isBefore(startOfCurrentDay)) {
@@ -471,21 +521,22 @@ public List<LogDTO> filterServiceName(LogQuery query, LocalDate fromDate, LocalD
         throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
     }
 
-    Bson match = Aggregates.match(
-            Filters.and(
-                    Filters.in("serviceName", query.getServiceName()),
-                    Filters.in("severityText", query.getSeverityText()),
-                    Filters.gte("createdTime", fromInstant),
-                    Filters.lte("createdTime", toInstant)
-            )
-    );
+    List<Bson> filters = new ArrayList<>();
+
+    if (query.getServiceName() != null) {
+        filters.add(Filters.in("serviceName", query.getServiceName()));
+    } else if (query.getSeverityText() != null) {
+        filters.add(Filters.in("severityText", query.getSeverityText()));
+    }
+
+    filters.add(Filters.gte("createdTime", fromInstant));
+    filters.add(Filters.lte("createdTime", toInstant));
+
+    Bson match = Aggregates.match(Filters.and(filters));
 
     List<LogDTO> result = LogDTO.mongoCollection()
             .withDocumentClass(LogDTO.class)
-            .aggregate(
-                    Arrays.asList(match),
-                    LogDTO.class
-            )
+            .aggregate(Arrays.asList(match), LogDTO.class)
             .into(new ArrayList<>());
 
     return result;
