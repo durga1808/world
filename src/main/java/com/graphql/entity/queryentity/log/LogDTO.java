@@ -5,6 +5,9 @@ import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
+import org.bson.codecs.pojo.annotations.BsonIgnore;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.graphql.entity.otellog.ScopeLogs;
 
 import io.quarkus.mongodb.panache.PanacheMongoEntity;
@@ -24,5 +27,5 @@ public class LogDTO extends PanacheMongoEntity {
     private Date createdTime;
     private String severityText;
     private List<ScopeLogs> scopeLogs;
-  
+ 
   }

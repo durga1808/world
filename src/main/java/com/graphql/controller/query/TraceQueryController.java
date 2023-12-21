@@ -17,6 +17,7 @@ import com.graphql.entity.queryentity.trace.DBMetric;
 import com.graphql.entity.queryentity.trace.KafkaMetrics;
 import com.graphql.entity.queryentity.trace.TraceDTO;
 import com.graphql.entity.queryentity.trace.TraceMetrics;
+import com.graphql.entity.queryentity.trace.TracePage;
 import com.graphql.entity.queryentity.trace.TraceQuery;
 import com.graphql.handler.query.TraceQueryHandler;
 import com.graphql.repo.query.TraceQueryRepo;
@@ -89,8 +90,38 @@ public class TraceQueryController {
   
   
     
+// @Query
+// public List<TraceDTO> filterTrace(
+//         @Name("query") TraceQuery query,
+//         @Name("page") int page,
+//         @Name("pagesize") int pageSize,
+//         @Name("from") LocalDate fromDate,
+//         @Name("to") LocalDate toDate,
+//         @Name("minutesAgo") Integer minutesAgo,
+//         @Name("sortorder") String sortOrder) {
+
+//     List<TraceDTO> traceList = new ArrayList<>();  
+
+//     if (sortOrder != null) {
+//         if ("new".equalsIgnoreCase(sortOrder)) {
+//             traceList = traceQueryHandler.getTraceFilterOrderByCreatedTimeDesc(traceQueryHandler.getTracesByStatusCodeAndDuration(query, fromDate, toDate, minutesAgo));
+//         } else if ("old".equalsIgnoreCase(sortOrder)) {
+//             traceList = traceQueryHandler.getTraceFilterAsc(traceQueryHandler.getTracesByStatusCodeAndDuration(query,fromDate, toDate, minutesAgo));
+//         } else if ("error".equalsIgnoreCase(sortOrder)) {
+//             traceList = traceQueryHandler.getTraceFilterOrderByErrorFirst(traceQueryHandler.getTracesByStatusCodeAndDuration(query, fromDate, toDate, minutesAgo));
+//         } else if ("peakLatency".equalsIgnoreCase(sortOrder)) {
+//             traceList = traceQueryHandler.getTraceFilterOrderByDuration(traceQueryHandler.getTracesByStatusCodeAndDuration(query,fromDate, toDate, minutesAgo));
+//         } 
+//     } else {
+//         traceList = traceQueryHandler.getTracesByStatusCodeAndDuration(query,fromDate, toDate, minutesAgo);
+//     }
+
+//     return traceList;
+// }
+
+
 @Query
-public List<TraceDTO> filterTrace(
+public TracePage filterTrace(
         @Name("query") TraceQuery query,
         @Name("page") int page,
         @Name("pagesize") int pageSize,
@@ -99,24 +130,30 @@ public List<TraceDTO> filterTrace(
         @Name("minutesAgo") Integer minutesAgo,
         @Name("sortorder") String sortOrder) {
 
-    List<TraceDTO> traceList = new ArrayList<>();  
+    List<TraceDTO> traceList = new ArrayList<>();
 
     if (sortOrder != null) {
         if ("new".equalsIgnoreCase(sortOrder)) {
-            traceList = traceQueryHandler.getTraceFilterOrderByCreatedTimeDesc(traceQueryHandler.getTracesByStatusCodeAndDuration(query, page, pageSize, fromDate, toDate, minutesAgo));
+            traceList = traceQueryHandler.getTraceFilterOrderByCreatedTimeDesc(traceQueryHandler.getTracesByStatusCodeAndDuration(query, fromDate, toDate, minutesAgo));
         } else if ("old".equalsIgnoreCase(sortOrder)) {
-            traceList = traceQueryHandler.getTraceFilterAsc(traceQueryHandler.getTracesByStatusCodeAndDuration(query, page, pageSize, fromDate, toDate, minutesAgo));
+            traceList = traceQueryHandler.getTraceFilterAsc(traceQueryHandler.getTracesByStatusCodeAndDuration(query,fromDate, toDate, minutesAgo));
         } else if ("error".equalsIgnoreCase(sortOrder)) {
-            traceList = traceQueryHandler.getTraceFilterOrderByErrorFirst(traceQueryHandler.getTracesByStatusCodeAndDuration(query, page, pageSize, fromDate, toDate, minutesAgo));
+            traceList = traceQueryHandler.getTraceFilterOrderByErrorFirst(traceQueryHandler.getTracesByStatusCodeAndDuration(query, fromDate, toDate, minutesAgo));
         } else if ("peakLatency".equalsIgnoreCase(sortOrder)) {
-            traceList = traceQueryHandler.getTraceFilterOrderByDuration(traceQueryHandler.getTracesByStatusCodeAndDuration(query, page, pageSize, fromDate, toDate, minutesAgo));
-        } 
+            traceList = traceQueryHandler.getTraceFilterOrderByDuration(traceQueryHandler.getTracesByStatusCodeAndDuration(query,fromDate, toDate, minutesAgo));
+        }
     } else {
-        traceList = traceQueryHandler.getTracesByStatusCodeAndDuration(query, page, pageSize, fromDate, toDate, minutesAgo);
+        traceList = traceQueryHandler.getTracesByStatusCodeAndDuration(query,fromDate, toDate, minutesAgo);
     }
 
-    return traceList;
+    int totalCount = traceList.size();
+    int startIdx = (page - 1) * pageSize;
+    int endIdx = Math.min(startIdx + pageSize, traceList.size());
+    List<TraceDTO> paginatedTraces = traceList.subList(startIdx, endIdx);
+
+    return new TracePage(paginatedTraces, totalCount);
 }
+
 
     
 // @Query

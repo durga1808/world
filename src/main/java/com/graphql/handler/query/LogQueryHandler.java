@@ -1,4 +1,5 @@
 package com.graphql.handler.query;
+import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -24,6 +25,7 @@ import com.graphql.repo.query.LogQueryRepo;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
 
 import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
@@ -442,54 +444,6 @@ public class LogQueryHandler {
 
 
 
-// public List<LogDTO> filterServiceName(LogQuery query, LocalDate fromDate, LocalDate toDate, Integer minutesAgo, String sortOrder) {
-//     Instant fromInstant;
-//     Instant toInstant;
-//     if (fromDate != null && toDate != null) {
-//         Instant startOfFrom = fromDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
-//         Instant startOfTo = toDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
-
-//         fromInstant = startOfFrom.isBefore(startOfTo) ? startOfFrom : startOfTo;
-//         toInstant = startOfFrom.isBefore(startOfTo) ? startOfTo : startOfFrom;
-
-//         toInstant = toInstant.plus(1, ChronoUnit.DAYS);
-//     } else if (minutesAgo > 0) {
-//         Instant currentInstant = Instant.now();
-//         Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
-
-//         // Calculate the start of the current day
-//         Instant startOfCurrentDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
-
-//         if (minutesAgoInstant.isBefore(startOfCurrentDay)) {
-//             fromInstant = startOfCurrentDay;
-//         } else {
-//             fromInstant = minutesAgoInstant;
-//         }
-
-//         toInstant = currentInstant;
-//     } else {
-//         throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
-//     }
-
-//     Bson match = Aggregates.match(
-//             Filters.and(
-//                     Filters.in("serviceName", query.getServiceName()),
-//                     Filters.in("severityText", query.getSeverityText()),
-//                     Filters.gte("createdTime", fromInstant),
-//                     Filters.lte("createdTime", toInstant)
-//             )
-//     );
-
-//     List<LogDTO> result = LogDTO.mongoCollection()
-//             .withDocumentClass(LogDTO.class)
-//             .aggregate(
-//                     Arrays.asList(match),
-//                     LogDTO.class
-//             )
-//             .into(new ArrayList<>());
-
-//     return result;
-// }
 
 
 public List<LogDTO> filterServiceName(LogQuery query, LocalDate fromDate, LocalDate toDate, Integer minutesAgo, String sortOrder) {
@@ -541,6 +495,68 @@ public List<LogDTO> filterServiceName(LogQuery query, LocalDate fromDate, LocalD
 
     return result;
 }
+
+// public List<LogDTO> filterServiceName(LogQuery query, LocalDate fromDate, LocalDate toDate, Integer minutesAgo, String sortOrder) {
+//     Instant fromInstant;
+//     Instant toInstant;
+
+//     if (fromDate != null && toDate != null) {
+//         Instant startOfFrom = fromDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
+//         Instant startOfTo = toDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+//         fromInstant = startOfFrom.isBefore(startOfTo) ? startOfFrom : startOfTo;
+//         toInstant = startOfFrom.isBefore(startOfTo) ? startOfTo : startOfFrom;
+
+//         toInstant = toInstant.plus(1, ChronoUnit.DAYS);
+//     } else if (minutesAgo > 0) {
+//         Instant currentInstant = Instant.now();
+//         Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+
+//         Instant startOfCurrentDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+//         if (minutesAgoInstant.isBefore(startOfCurrentDay)) {
+//             fromInstant = startOfCurrentDay;
+//         } else {
+//             fromInstant = minutesAgoInstant;
+//         }
+
+//         toInstant = currentInstant;
+//     } else {
+//         throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
+//     }
+
+//     List<Bson> filters = new ArrayList<>();
+
+//     if (query.getServiceName() != null) {
+//         filters.add(Filters.in("serviceName", query.getServiceName()));
+//     } else if (query.getSeverityText() != null) {
+//         filters.add(Filters.in("severityText", query.getSeverityText()));
+//     }
+
+//     filters.add(Filters.gte("createdTime", fromInstant));
+//     filters.add(Filters.lte("createdTime", toInstant));
+
+//     Bson match = Aggregates.match(Filters.and(filters));
+
+//     // Exclude createdTime field from the result
+//     Bson projection = Projections.exclude("createdTime");
+
+//     List<LogDTO> result = LogDTO.mongoCollection()
+//             .withDocumentClass(LogDTO.class)
+//             .aggregate(Arrays.asList(match, projection), LogDTO.class)
+//             .into(new ArrayList<>());
+
+//     // Convert UTC timestamps to formatted strings
+//     SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+//     for (LogDTO logDTO : result) {
+//         Date logDate = logDTO.getCreatedTime();
+//         String formattedDateTime = dateFormat.format(logDate);
+//         logDTO.setCreatedTime(formattedDateTime);
+//     }
+
+//     return result;
+// }
 
 
 public List<LogMetrics> getLogMetricCount(int minutesAgo, LocalDate from, LocalDate to, List<String> serviceNameList) {
@@ -608,6 +624,5 @@ private void calculateCallCounts(LogDTO logDTO, LogMetrics metrics) {
 }
 
 }
-// ... (other methods)
 
    
