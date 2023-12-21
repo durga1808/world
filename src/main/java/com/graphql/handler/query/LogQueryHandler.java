@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.bson.Document;
 import org.bson.conversions.Bson;
 
 import com.graphql.entity.otellog.ScopeLogs;
@@ -22,8 +23,13 @@ import com.graphql.entity.queryentity.log.LogMetrics;
 import com.graphql.entity.queryentity.log.LogQuery;
 import com.graphql.repo.query.LogQueryRepo;
 import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Aggregates;
+import com.mongodb.client.model.Field;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Sorts;
 
 import io.quarkus.mongodb.panache.PanacheQuery;
 import io.quarkus.panache.common.Page;
@@ -606,6 +612,46 @@ private void calculateCallCounts(LogDTO logDTO, LogMetrics metrics) {
         }
     }
 }
+
+  //sort orer decending 
+  public List<LogDTO> getAllLogssOrderByCreatedTimeDesc(List<String> serviceNameList) {
+    return logQueryRepo.findAllOrderByCreatedTimeDesc(serviceNameList);
+  }
+
+
+//sort order ascending
+public List<LogDTO> getAllLogssAsc(List<String> serviceNameList) {
+    return logQueryRepo.findAllOrderByCreatedTimeAsc(serviceNameList);
+}
+
+//sort order error data decending
+public List<LogDTO> getErrorLogsByServiceNamesOrderBySeverityAndCreatedTimeDesc(List<String> serviceNameList) {
+    MongoDatabase database = mongoClient.getDatabase("OtelLog");
+    MongoCollection<LogDTO> logDTOCollection = database.getCollection("LogDTO", LogDTO.class);
+
+    Bson matchStage = Aggregates.match(Filters.in("serviceName", serviceNameList));
+
+    Bson addSortFieldStage = Aggregates.addFields(new Field<>("customSortField", new Document("$cond",
+            Arrays.asList(
+                    new Document("$in", Arrays.asList("$severityText", Arrays.asList("ERROR", "SEVERE"))),
+                    0,
+                    1
+            )
+    )));
+
+    Bson sortStage = Aggregates.sort(Sorts.orderBy(
+            Sorts.ascending("customSortField"),
+            Sorts.descending("createdTime")
+    ));
+
+    Bson projectStage = Aggregates.project(Projections.exclude("customSortField"));
+
+    List<LogDTO> result = logDTOCollection.aggregate(Arrays.asList(matchStage, addSortFieldStage, sortStage, projectStage))
+            .into(new ArrayList<>());
+
+    return result;
+}
+
 
 }
 // ... (other methods)

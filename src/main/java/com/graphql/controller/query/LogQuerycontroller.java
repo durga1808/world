@@ -1,9 +1,13 @@
 package com.graphql.controller.query;
 
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -369,6 +373,67 @@ public List<LogMetrics> logMetricsCount(
 ) {
     // Assuming logQueryHandler has a method similar to getLogMetricCount
     return logQueryHandler.getLogMetricCount(minutesAgo, startDate, endDate, serviceNameList);
+}
+
+@Query
+public List<LogDTO> sortOrderLogs(
+        @Name("sortOrder") String sortOrder,
+        @Name("serviceNameList") List<String> serviceNameList,
+        @Name("page") int page,
+        @Name("pageSize") int pageSize,
+        @Name("from") LocalDate fromDate,
+        @Name("to") LocalDate toDate,
+        @Name("minutesAgo") Integer minutesAgo
+) {
+    List<LogDTO> logs;
+
+    if ("new".equalsIgnoreCase(sortOrder)) {
+        logs = logQueryHandler.getAllLogssOrderByCreatedTimeDesc(serviceNameList);
+    } else if ("old".equalsIgnoreCase(sortOrder)) {
+        logs = logQueryHandler.getAllLogssAsc(serviceNameList);
+    } else if ("error".equalsIgnoreCase(sortOrder)) {
+        logs = logQueryHandler.getErrorLogsByServiceNamesOrderBySeverityAndCreatedTimeDesc(serviceNameList);
+    } else {
+        logs = new ArrayList<>();
+    }
+
+    Instant fromInstant;
+    Instant toInstant;
+
+    if (fromDate != null && toDate != null) {
+        fromInstant = fromDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
+        toInstant = toDate.atStartOfDay(ZoneId.systemDefault()).toInstant().plus(1, ChronoUnit.DAYS);
+    } else if (minutesAgo != null && minutesAgo > 0) {
+        Instant currentInstant = Instant.now();
+        Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+
+        fromInstant = minutesAgoInstant.isBefore(currentInstant) ? minutesAgoInstant : currentInstant;
+        toInstant = currentInstant;
+    } else {
+        throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
+    }
+
+    logs = logs.stream()
+            .filter(log -> {
+                Date createdDate = log.getCreatedTime();
+                if (createdDate != null) {
+                    Instant createdInstant = createdDate.toInstant();
+                    return createdInstant.isAfter(fromInstant) && createdInstant.isBefore(toInstant);
+                }
+                return false;
+            })
+            .collect(Collectors.toList());
+
+    int startIndex = (page - 1) * pageSize;
+    int endIndex = Math.min(startIndex + pageSize, logs.size());
+
+    if (startIndex < logs.size()) {
+        logs = logs.subList(startIndex, endIndex);
+    } else {
+        logs = new ArrayList<>();
+    }
+
+    return logs;
 }
 
 
