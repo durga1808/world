@@ -113,6 +113,18 @@ public List<LogDTO> searchFunction(String keyword, int page, int pageSize, Local
 //                 .collect(Collectors.toList());
 //     }
 
+
+
+
+public List<LogDTO> findOrderByCreatedTimeDesc(List<String> serviceNameList) {
+    return find("serviceName in ?1",Sort.descending("createdTime"),serviceNameList).list();
+}
+
+public List<LogDTO> findOrderByCreatedTimeAsc(List<String> serviceNameList) {
+    return find("serviceName in ?1",Sort.ascending("createdTime"),serviceNameList).list();
+}
+
+
 }
 
 
