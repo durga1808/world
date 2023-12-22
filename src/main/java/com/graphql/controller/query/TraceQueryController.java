@@ -156,39 +156,38 @@ public TracePage filterTrace(
 
 
     
-// @Query
-// public List<TraceDTO> sortOrderTrace(
-//    @Name("sortorder") String sortOrder,
-//    @Name("serviceNameList") List<String> serviceNameList,
-//    @Name("page") int page,
-//    @Name("pageSize") int pageSize
-// ) {
-//     List<TraceDTO> traces;
+@Query
+public List<TraceDTO> sortOrderTrace(
+   @Name("sortorder") String sortOrder,
+   @Name("serviceNameList") List<String> serviceNameList,
+   @Name("page") int page,
+   @Name("pageSize") int pageSize
+) {
+    List<TraceDTO> traces;
 
-//     if ("new".equalsIgnoreCase(sortOrder)) {
-//         traces = traceQueryHandler.getAllTracesOrderByCreatedTimeDesc(serviceNameList);
-//     } else if ("old".equalsIgnoreCase(sortOrder)) {
-//         traces = traceQueryHandler.getAllTracesAsc(serviceNameList);
-//     } else if ("error".equalsIgnoreCase(sortOrder)) {
-//         traces = traceQueryHandler.findAllOrderByErrorFirst(serviceNameList);
-//     } else if ("peakLatency".equalsIgnoreCase(sortOrder)) {
-//         traces = traceQueryHandler.findAllOrderByDuration(serviceNameList);
-//     } else {
-//         traces = new ArrayList<>();
-//     }
+    if ("new".equalsIgnoreCase(sortOrder)) {
+        traces = traceQueryHandler.getAllTracesOrderByCreatedTimeDesc(serviceNameList);
+    } else if ("old".equalsIgnoreCase(sortOrder)) {
+        traces = traceQueryHandler.getAllTracesAsc(serviceNameList);
+    } else if ("error".equalsIgnoreCase(sortOrder)) {
+        traces = traceQueryHandler.findAllOrderByErrorFirst(serviceNameList);
+    } else if ("peakLatency".equalsIgnoreCase(sortOrder)) {
+        traces = traceQueryHandler.findAllOrderByDuration(serviceNameList);
+    } else {
+        traces = new ArrayList<>();
+    }
 
-//     // Apply pagination
-//     int startIndex = (page - 1) * pageSize;
-//     int endIndex = Math.min(startIndex + pageSize, traces.size());
+    int startIndex = (page - 1) * pageSize;
+    int endIndex = Math.min(startIndex + pageSize, traces.size());
 
-//     if (startIndex < traces.size()) {
-//         traces = traces.subList(startIndex, endIndex);
-//     } else {
-//         traces = new ArrayList<>();
-//     }
+    if (startIndex < traces.size()) {
+        traces = traces.subList(startIndex, endIndex);
+    } else {
+        traces = new ArrayList<>();
+    }
 
-//     return traces;
-// }
+    return traces;
+}
 
 
 @Query
