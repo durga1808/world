@@ -65,67 +65,6 @@ public class LogQuerycontroller{
 
 
 
-// @Query
-// public LogPage searchFunction( String keyword, 
-// LocalDate from,
-//  LocalDate to, 
-//  Integer minutesAgo,
-//  int page,
-//  int pageSize ){
-
-//      List<LogDTO> log = logQueryHandler.searchFunction(keyword);
-
-//      if (from != null && to != null) {
-        
-//         if (from.isAfter(to)) {
-//             LocalDate temp = from;
-//             from = to;
-//             to = temp;
-//         }
-
-
-//         Instant fromInstant = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
-//         Instant toInstant = to.atStartOfDay(ZoneId.systemDefault()).toInstant().plus(1, ChronoUnit.DAYS);
-
-//         log = filterLogsByDateRange(log, fromInstant, toInstant);
-//     } else if (minutesAgo > 0) {
-//         Instant currentInstant = Instant.now();
-//         Instant fromInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
-//         Instant toInstant = currentInstant.minus(1, ChronoUnit.MINUTES);
-
-//         log = filterLogsByMinutesAgo(log, fromInstant, toInstant);
-//     }
-//     int totalCount = log.size();
-
- 
-//     int startIdx = (page - 1) * pageSize;
-//     int endIdx = Math.min(startIdx + pageSize, log.size());
-//     List<LogDTO> paginatedLogs = log.subList(startIdx, endIdx);
-
- 
-//     return new LogPage(paginatedLogs, totalCount);
-
-// }
-
-// private List<LogDTO> filterLogsByDateRange(List<LogDTO> logs, Instant from, Instant to) {
-//     return logs.stream()
-//             .filter(log -> isWithinDateRange(log.getCreatedTime(), from, to))
-//             .collect(Collectors.toList());
-// }
-
-// private List<LogDTO> filterLogsByMinutesAgo(List<LogDTO> logs, Instant fromInstant, Instant toInstant) {
-   
-//     final Instant startOfCurrentDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
-
-//     Instant adjustedFromInstant = fromInstant.isBefore(startOfCurrentDay) ? startOfCurrentDay : fromInstant;
-
-//     return logs.stream()
-//             .filter(log -> isWithinDateRange(log.getCreatedTime(), adjustedFromInstant, toInstant))
-//             .collect(Collectors.toList());
-// }
-
-
-
 // @POST
 //     @Path("/filteredLogs")
 //     @Consumes("application/json")
@@ -263,33 +202,6 @@ public class LogQuerycontroller{
 
 //   return arrayBuilder.toString();
 // }
-    
-
-
-// @Query
-// public List<LogDTO> filterLogs(
-//         @Name("query") LogQuery query,
-//         @Name("page") int page,
-//         @Name("pageSize") int pageSize,
-//         @Name("from") LocalDate fromDate,
-//         @Name("to") LocalDate toDate,
-//         @Name("minutesAgo") Integer minutesAgo,
-//         @Name("sortorder") String sortOrder) {
-
-//     List<LogDTO> logs = logQueryHandler.filterServiceName(query, page, pageSize, fromDate, toDate, minutesAgo);
-
-//     if (sortOrder != null) {
-//         if ("new".equalsIgnoreCase(sortOrder)) {
-//             logs = logQueryHandler.getFilterLogsByCreatedTimeDesc(logs);
-//         } else if ("old".equalsIgnoreCase(sortOrder)) {
-//             logs = logQueryHandler.getFilterLogssAsc(logs);
-//         } else if ("error".equalsIgnoreCase(sortOrder)) {
-//             logs = logQueryHandler.getFilterErrorLogs(logs);
-//         }
-//     }
-
-//     return logs;
-// }
 
 
 @Query
@@ -308,11 +220,11 @@ public LogPage filterLogs(
            
 
             if ("new".equalsIgnoreCase(sortOrder)) {
-                logDTOs = FilterLogsByCreatedTimeDesc(logDTOs);
+                logDTOs = logQueryHandler.filterLogsByCreatedTimeDesc(logDTOs);
             } else if ("old".equalsIgnoreCase(sortOrder)) {
-                logDTOs = FilterLogssAsc(logDTOs);
+                logDTOs = logQueryHandler.filterLogsAsc(logDTOs);
             } else if ("error".equalsIgnoreCase(sortOrder)) {
-                logDTOs = FilterErrorLogs(logDTOs);
+                logDTOs = logQueryHandler.filterErrorLogs(logDTOs);
             } else {
                 throw new IllegalArgumentException("Invalid sortOrder parameter. Use 'new', 'old', or 'error'.");
             }
@@ -320,38 +232,13 @@ public LogPage filterLogs(
         int totalCount = logDTOs.size();
         int startIdx = (page - 1) * pageSize;
     int endIdx = Math.min(startIdx + pageSize,  logDTOs.size());
+// System.out.println("----------filter log size"+ logDTOs.size());
     List<LogDTO> paginatedLogs =  logDTOs.subList(startIdx, endIdx);
-
-    // Create and return LogPage object
     return new LogPage(paginatedLogs, totalCount);
     }
    
      
 
-
-private List<LogDTO> FilterErrorLogs(List<LogDTO> logDTOs) {
-    return logDTOs.stream()
-    .sorted(Comparator
-            .comparing((LogDTO log) -> {
-                String severityText = log.getSeverityText();
-                return ("ERROR".equals(severityText) || "SEVERE".equals(severityText)) ? 0 : 1;
-            })
-            .thenComparing(LogDTO::getCreatedTime, Comparator.nullsLast(Comparator.reverseOrder()))
-    )
-    .collect(Collectors.toList());
-}
-
-private List<LogDTO> FilterLogssAsc(List<LogDTO> logDTOs) {
-    return logDTOs.stream()
-    .sorted(Comparator.comparing(LogDTO::getCreatedTime))
-    .collect(Collectors.toList());
-}
-
-private List<LogDTO> FilterLogsByCreatedTimeDesc(List<LogDTO> logDTOs) {
-    System.out.println("------getFilterLogsByCreatedTimeDesc---------"+logDTOs.size());
-    return logDTOs.stream()
-            .sorted(Comparator.comparing(LogDTO::getCreatedTime, Comparator.reverseOrder()))
-            .collect(Collectors.toList());}
 
 @Query
 public List<LogDTO> searchFunction(@Name("keyword") String keyword, 
