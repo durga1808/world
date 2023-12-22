@@ -88,106 +88,6 @@ public class TraceQueryController {
       return  TraceQueryHandler.getPeakLatency(serviceNameList, fromDate, toDate, minutesAgo, minpeakLatency, maxpeakLatency);
   }
   
-  
-    
-// @Query
-// public List<TraceDTO> filterTrace(
-//         @Name("query") TraceQuery query,
-//         @Name("page") int page,
-//         @Name("pagesize") int pageSize,
-//         @Name("from") LocalDate fromDate,
-//         @Name("to") LocalDate toDate,
-//         @Name("minutesAgo") Integer minutesAgo,
-//         @Name("sortorder") String sortOrder) {
-
-//     List<TraceDTO> traceList = new ArrayList<>();  
-
-//     if (sortOrder != null) {
-//         if ("new".equalsIgnoreCase(sortOrder)) {
-//             traceList = traceQueryHandler.getTraceFilterOrderByCreatedTimeDesc(traceQueryHandler.getTracesByStatusCodeAndDuration(query, fromDate, toDate, minutesAgo));
-//         } else if ("old".equalsIgnoreCase(sortOrder)) {
-//             traceList = traceQueryHandler.getTraceFilterAsc(traceQueryHandler.getTracesByStatusCodeAndDuration(query,fromDate, toDate, minutesAgo));
-//         } else if ("error".equalsIgnoreCase(sortOrder)) {
-//             traceList = traceQueryHandler.getTraceFilterOrderByErrorFirst(traceQueryHandler.getTracesByStatusCodeAndDuration(query, fromDate, toDate, minutesAgo));
-//         } else if ("peakLatency".equalsIgnoreCase(sortOrder)) {
-//             traceList = traceQueryHandler.getTraceFilterOrderByDuration(traceQueryHandler.getTracesByStatusCodeAndDuration(query,fromDate, toDate, minutesAgo));
-//         } 
-//     } else {
-//         traceList = traceQueryHandler.getTracesByStatusCodeAndDuration(query,fromDate, toDate, minutesAgo);
-//     }
-
-//     return traceList;
-// }
-
-
-@Query
-public TracePage filterTrace(
-        @Name("query") TraceQuery query,
-        @Name("page") int page,
-        @Name("pagesize") int pageSize,
-        @Name("from") LocalDate fromDate,
-        @Name("to") LocalDate toDate,
-        @Name("minutesAgo") Integer minutesAgo,
-        @Name("sortorder") String sortOrder) {
-
-    List<TraceDTO> traceList = new ArrayList<>();
-
-    if (sortOrder != null) {
-        if ("new".equalsIgnoreCase(sortOrder)) {
-            traceList = traceQueryHandler.getTraceFilterOrderByCreatedTimeDesc(traceQueryHandler.getTracesByStatusCodeAndDuration(query, fromDate, toDate, minutesAgo));
-        } else if ("old".equalsIgnoreCase(sortOrder)) {
-            traceList = traceQueryHandler.getTraceFilterAsc(traceQueryHandler.getTracesByStatusCodeAndDuration(query,fromDate, toDate, minutesAgo));
-        } else if ("error".equalsIgnoreCase(sortOrder)) {
-            traceList = traceQueryHandler.getTraceFilterOrderByErrorFirst(traceQueryHandler.getTracesByStatusCodeAndDuration(query, fromDate, toDate, minutesAgo));
-        } else if ("peakLatency".equalsIgnoreCase(sortOrder)) {
-            traceList = traceQueryHandler.getTraceFilterOrderByDuration(traceQueryHandler.getTracesByStatusCodeAndDuration(query,fromDate, toDate, minutesAgo));
-        }
-    } else {
-        traceList = traceQueryHandler.getTracesByStatusCodeAndDuration(query,fromDate, toDate, minutesAgo);
-    }
-
-    int totalCount = traceList.size();
-    int startIdx = (page - 1) * pageSize;
-    int endIdx = Math.min(startIdx + pageSize, traceList.size());
-    List<TraceDTO> paginatedTraces = traceList.subList(startIdx, endIdx);
-
-    return new TracePage(paginatedTraces, totalCount);
-}
-
-
-    
-@Query
-public List<TraceDTO> sortOrderTrace(
-   @Name("sortorder") String sortOrder,
-   @Name("serviceNameList") List<String> serviceNameList,
-   @Name("page") int page,
-   @Name("pageSize") int pageSize
-) {
-    List<TraceDTO> traces;
-
-    if ("new".equalsIgnoreCase(sortOrder)) {
-        traces = traceQueryHandler.getAllTracesOrderByCreatedTimeDesc(serviceNameList);
-    } else if ("old".equalsIgnoreCase(sortOrder)) {
-        traces = traceQueryHandler.getAllTracesAsc(serviceNameList);
-    } else if ("error".equalsIgnoreCase(sortOrder)) {
-        traces = traceQueryHandler.findAllOrderByErrorFirst(serviceNameList);
-    } else if ("peakLatency".equalsIgnoreCase(sortOrder)) {
-        traces = traceQueryHandler.findAllOrderByDuration(serviceNameList);
-    } else {
-        traces = new ArrayList<>();
-    }
-
-    int startIndex = (page - 1) * pageSize;
-    int endIndex = Math.min(startIndex + pageSize, traces.size());
-
-    if (startIndex < traces.size()) {
-        traces = traces.subList(startIndex, endIndex);
-    } else {
-        traces = new ArrayList<>();
-    }
-
-    return traces;
-}
 
 
 @Query
@@ -241,9 +141,8 @@ public List<KafkaMetrics> getKafkaTraceMetricCount(
     return kafkaMetrics;
 }
 
-
 @Query
-public List<TraceDTO> sortOrderTrace(
+public TracePage sortOrderTrace(
     @Name("sortOrder") String sortOrder,
     @Name("serviceNameList") List<String> serviceNameList,
     @Name("page") int page,
@@ -282,29 +181,65 @@ public List<TraceDTO> sortOrderTrace(
         throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
     }
 
-traces = traces.stream()
-.filter(trace -> {
-    Date createdDate = trace.getCreatedTime();
-    if (createdDate != null) {
-        Instant createdInstant = createdDate.toInstant();
-        return createdInstant.isAfter(fromInstant) && createdInstant.isBefore(toInstant);
-    }
-    return false; 
-})
-.collect(Collectors.toList());
+    List<TraceDTO> filteredTraces = traces.stream()
+        .filter(trace -> {
+            Date createdDate = trace.getCreatedTime();
+            if (createdDate != null) {
+                Instant createdInstant = createdDate.toInstant();
+                return createdInstant.isAfter(fromInstant) && createdInstant.isBefore(toInstant);
+            }
+            return false;
+        })
+        .collect(Collectors.toList());
 
-
+    int totalCount = filteredTraces.size();
     int startIndex = (page - 1) * pageSize;
-    int endIndex = Math.min(startIndex + pageSize, traces.size());
+    int endIndex = Math.min(startIndex + pageSize, filteredTraces.size());
 
-    if (startIndex < traces.size()) {
-        traces = traces.subList(startIndex, endIndex);
+    List<TraceDTO> paginatedTraces;
+    if (startIndex < filteredTraces.size()) {
+        paginatedTraces = filteredTraces.subList(startIndex, endIndex);
     } else {
-        traces = new ArrayList<>();
+        paginatedTraces = new ArrayList<>();
     }
 
-    return traces;
+    return new TracePage(paginatedTraces, totalCount);
 }
 
+
+
+@Query
+public TracePage traceFilter(
+        @Name("query") TraceQuery query,
+        @Name("page") int page,
+        @Name("pagesize") int pageSize,
+        @Name("from") LocalDate fromDate,
+        @Name("to") LocalDate toDate,
+        @Name("minutesAgo") Integer minutesAgo,
+        @Name("sortorder") String sortOrder) {
+
+    List<TraceDTO> traceList = new ArrayList<>();
+
+    if (sortOrder != null) {
+        if ("new".equalsIgnoreCase(sortOrder)) {
+            traceList = traceQueryHandler.getTraceFilterOrderByCreatedTimeDesc(traceQueryHandler.getByFilter(query, fromDate, toDate, minutesAgo));
+        } else if ("old".equalsIgnoreCase(sortOrder)) {
+            traceList = traceQueryHandler.getTraceFilterAsc(traceQueryHandler.getByFilter(query, fromDate, toDate, minutesAgo));
+        } else if ("error".equalsIgnoreCase(sortOrder)) {
+            traceList = traceQueryHandler.getTraceFilterOrderByErrorFirst(traceQueryHandler.getByFilter(query, fromDate, toDate, minutesAgo));
+        } else if ("peakLatency".equalsIgnoreCase(sortOrder)) {
+            traceList = traceQueryHandler.getTraceFilterOrderByDuration(traceQueryHandler.getByFilter(query, fromDate, toDate, minutesAgo));
+        }
+    } else {
+        traceList = traceQueryHandler.getByFilter(query, fromDate, toDate, minutesAgo);
+    }
+
+    int totalCount = traceList.size();
+    int startIdx = (page - 1) * pageSize;
+    int endIdx = Math.min(startIdx + pageSize, traceList.size());
+    List<TraceDTO> paginatedTraces = traceList.subList(startIdx, endIdx);
+
+    return new TracePage(paginatedTraces, totalCount);
+}
 
 }
