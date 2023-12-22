@@ -376,7 +376,7 @@ public List<LogMetrics> logMetricsCount(
 }
 
 @Query
-public List<LogDTO> sortOrderLogs(
+public LogPage sortOrderLogs(
         @Name("sortOrder") String sortOrder,
         @Name("serviceNameList") List<String> serviceNameList,
         @Name("page") int page,
@@ -424,16 +424,16 @@ public List<LogDTO> sortOrderLogs(
             })
             .collect(Collectors.toList());
 
-    int startIndex = (page - 1) * pageSize;
-    int endIndex = Math.min(startIndex + pageSize, logs.size());
+   
+        int totalCount = logs.size();
+        int startIdx = (page - 1) * pageSize;
+    int endIdx = Math.min(startIdx + pageSize,  logs.size());
+    List<LogDTO> paginatedLogs =  logs.subList(startIdx, endIdx);
 
-    if (startIndex < logs.size()) {
-        logs = logs.subList(startIndex, endIndex);
-    } else {
-        logs = new ArrayList<>();
-    }
+    // Create and return LogPage object
+    return new LogPage(paginatedLogs, totalCount);
 
-    return logs;
+
 }
 
 
