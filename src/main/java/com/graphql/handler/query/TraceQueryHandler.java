@@ -7,6 +7,8 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -69,7 +71,50 @@ public class TraceQueryHandler {
     //             .collect(Collectors.toList());
     // }
 
+  public List<TraceDTO> getByFilter(TraceQuery query, LocalDate fromDate,  LocalDate toDate,  Integer minutesAgo) {
+  Instant fromInstant;
+  Instant toInstant;
 
+  if (fromDate != null && toDate != null) {
+      Instant startOfFrom = fromDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
+      Instant startOfTo = toDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+      fromInstant = startOfFrom.isBefore(startOfTo) ? startOfFrom : startOfTo;
+      toInstant = startOfFrom.isBefore(startOfTo) ? startOfTo : startOfFrom;
+
+      toInstant = toInstant.plus(1, ChronoUnit.DAYS);
+  } else if (minutesAgo != null && minutesAgo > 0) {
+      Instant currentInstant = Instant.now();
+      Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+
+      Instant startOfCurrentDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+      fromInstant = minutesAgoInstant.isBefore(startOfCurrentDay) ? startOfCurrentDay : minutesAgoInstant;
+      toInstant = currentInstant;
+  } else {
+      throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
+  }
+
+  List<Bson> filters = new ArrayList<>();
+
+  if (query.getServiceName() != null) {
+      filters.add(Filters.in("serviceName", query.getServiceName()));
+  } else if (query.getMethodName() != null) {
+      filters.add(Filters.in("methodName", query.getMethodName()));
+  }
+
+  filters.add(Filters.gte("createdTime", fromInstant));
+  filters.add(Filters.lte("createdTime", toInstant));
+
+  Bson match = Aggregates.match(Filters.and(filters));
+
+  List<TraceDTO> result = TraceDTO.mongoCollection()
+          .withDocumentClass(TraceDTO.class)
+          .aggregate(Arrays.asList(match), TraceDTO.class)
+          .into(new ArrayList<>());
+
+  return result;
+}
     
 //    public List<TraceDTO> getTracesByStatusCodeAndDuration(TraceQuery query, int page, int pageSize) {
 //     PanacheQuery<TraceDTO> panacheQuery = TraceDTO.find(
@@ -153,164 +198,64 @@ public List<TraceDTO> findAllOrderByDuration(List<String> serviceNameList) {
 
 
 
-//trace filter
-// public List<TraceDTO> getTracesByStatusCodeAndDuration(TraceQuery query, int page, int pageSize, LocalDate fromDate, LocalDate toDate, Integer minutesAgo) {
-   
-//     Instant fromInstant = null;
-//     Instant toInstant = null;
-
-//     if (fromDate != null && toDate != null) {
-//       Instant startOfFrom = fromDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
-//       Instant startOfTo = toDate .atStartOfDay(ZoneId.systemDefault()).toInstant();
-
-//       fromInstant = startOfFrom.isBefore(startOfTo) ? startOfFrom : startOfTo;
-//       toInstant = startOfFrom.isBefore(startOfTo) ? startOfTo : startOfFrom;
-
-//       toInstant = toInstant.plus(1, ChronoUnit.DAYS);
-//     } else if (minutesAgo > 0) {
-//       Instant currentInstant = Instant.now();
-//       Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
-
-//       // Calculate the start of the current day
-//       Instant startOfCurrentDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
-
-//       if (minutesAgoInstant.isBefore(startOfCurrentDay)) {
-//         fromInstant = startOfCurrentDay;
-//       } else {
-//         fromInstant = minutesAgoInstant;
-//       }
-
-//       toInstant = currentInstant;
-//     } else {
-//       throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
-//     }
-
-//     PanacheQuery<TraceDTO> panacheQuery = TraceDTO.find(
-//             "statusCode >= :minStatusCode and statusCode <= :maxStatusCode " +
-//                     "and duration >= :minDuration and duration <= :maxDuration " +
-//                     "and serviceName in :serviceNames and methodName in :methodNames " +
-//                     "and createdTime >= :fromDate and createdTime <= :toDate",
-//             Parameters
-//                     .with("minStatusCode", query.getStatusCode().get(0).getMin())
-//                     .and("maxStatusCode", query.getStatusCode().get(0).getMax())
-//                     .and("minDuration", query.getDuration().getMin())
-//                     .and("maxDuration", query.getDuration().getMax())
-//                     .and("serviceNames", query.getServiceName())
-//                     .and("methodNames", query.getMethodName())
-//                     .and("fromDate", Date.from(fromInstant))
-//                     .and("toDate", Date.from(toInstant)));
-
-//     List<TraceDTO> results = panacheQuery.page(Page.of(page, pageSize)).list();
-
-//     return results.stream()
-//             .filter(trace ->
-//                     trace.getStatusCode() >= query.getStatusCode().get(0).getMin() &&
-//                             trace.getStatusCode() <= query.getStatusCode().get(0).getMax() &&
-//                             trace.getDuration() >= query.getDuration().getMin() &&
-//                             trace.getDuration() <= query.getDuration().getMax() &&
-//                             query.getServiceName().contains(trace.getServiceName()) &&
-//                             query.getMethodName().contains(trace.getMethodName()) &&
-//                             trace.getCreatedTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().compareTo(fromDate) >= 0 &&
-//                             trace.getCreatedTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().compareTo(toDate) <= 0)
-//             .collect(Collectors.toList());
-// }
 
 public List<TraceDTO> getTracesByStatusCodeAndDuration(TraceQuery query, LocalDate fromDate, LocalDate toDate, Integer minutesAgo) {
 
-  Instant fromInstant = null;
-  Instant toInstant = null;
+    Instant fromInstant = null;
+    Instant toInstant = null;
 
-  if (fromDate != null && toDate != null) {
-      Instant startOfFrom = fromDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
-      Instant startOfTo = toDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
+    if (fromDate != null && toDate != null) {
+        Instant startOfFrom = fromDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
+        Instant startOfTo = toDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
 
-      fromInstant = startOfFrom.isBefore(startOfTo) ? startOfFrom : startOfTo;
-      toInstant = startOfFrom.isBefore(startOfTo) ? startOfTo : startOfFrom;
+        fromInstant = startOfFrom.isBefore(startOfTo) ? startOfFrom : startOfTo;
+        toInstant = startOfFrom.isBefore(startOfTo) ? startOfTo : startOfFrom;
 
-      toInstant = toInstant.plus(1, ChronoUnit.DAYS);
-  } else if (minutesAgo > 0) {
-      Instant currentInstant = Instant.now();
-      Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
+        toInstant = toInstant.plus(1, ChronoUnit.DAYS);
+    } else if (minutesAgo > 0) {
+        Instant currentInstant = Instant.now();
+        Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
 
-      Instant startOfCurrentDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
+        // Calculate the start of the current day
+        Instant startOfCurrentDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
 
-      if (minutesAgoInstant.isBefore(startOfCurrentDay)) {
-          fromInstant = startOfCurrentDay;
-      } else {
-          fromInstant = minutesAgoInstant;
-      }
+        if (minutesAgoInstant.isBefore(startOfCurrentDay)) {
+            fromInstant = startOfCurrentDay;
+        } else {
+            fromInstant = minutesAgoInstant;
+        }
 
-      toInstant = currentInstant;
-  } else {
-      throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
-  }
+        toInstant = currentInstant;
+    } else {
+        throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
+    }
 
-  PanacheQuery<TraceDTO> panacheQuery = TraceDTO.find(
-          "statusCode >= :minStatusCode and statusCode <= :maxStatusCode " +
-                  "and duration >= :minDuration and duration <= :maxDuration " +
-                  "and serviceName in :serviceNames and methodName in :methodNames " +
-                  "and createdTime >= :fromDate and createdTime <= :toDate",
-          Parameters
-                  .with("minStatusCode", query.getStatusCode() != null ? query.getStatusCode().get(0).getMin() : null)
-                  .and("maxStatusCode", query.getStatusCode() != null ? query.getStatusCode().get(0).getMax() : null)
-                  .and("minDuration", query.getDuration() != null ? query.getDuration().getMin() : null)
-                  .and("maxDuration", query.getDuration() != null ? query.getDuration().getMax() : null)
-                  .and("serviceNames", query.getServiceName())
-                  .and("methodNames", query.getMethodName())
-                  .and("fromDate", Date.from(fromInstant))
-                  .and("toDate", Date.from(toInstant)));
+    PanacheQuery<TraceDTO> panacheQuery = TraceDTO.find(
+            "statusCode >= :minStatusCode and statusCode <= :maxStatusCode " +
+                    "and duration >= :minDuration and duration <= :maxDuration " +
+                    "and serviceName in :serviceNames and methodName in :methodNames " +
+                    "and createdTime >= :fromDate and createdTime <= :toDate",
+            Parameters
+                    .with("minStatusCode", Optional.ofNullable(query.getStatusCode())
+                            .map(statusCode -> statusCode.get(0).getMin()).orElse(null))
+                    .and("maxStatusCode", Optional.ofNullable(query.getStatusCode())
+                            .map(statusCode -> statusCode.get(0).getMax()).orElse(null))
+                    .and("minDuration", Optional.ofNullable(query.getDuration())
+                            .map(duration -> duration.getMin()).orElse(null))
+                    .and("maxDuration", Optional.ofNullable(query.getDuration())
+                            .map(duration -> duration.getMax()).orElse(null))
+                    .and("serviceNames", Optional.ofNullable(query.getServiceName()).orElse(Collections.emptyList()))
+                    .and("methodNames", Optional.ofNullable(query.getMethodName()).orElse(Collections.emptyList()))
+                    .and("fromDate", Optional.ofNullable(fromInstant).map(Date::from).orElse(null))
+                    .and("toDate", Optional.ofNullable(toInstant).map(Date::from).orElse(null)));
 
-  return panacheQuery.list();
+    return panacheQuery.list().stream()
+            .filter(trace ->
+                    trace.getStatusCode() >= Optional.ofNullable(query.getStatusCode())
+                            .map(statusCode -> statusCode.get(0).getMin()).orElse((long) 0))
+            .collect(Collectors.toList());
 }
 
-
-// public List<TraceDTO> getTracesByStatusCodeAndDuration(TraceQuery query, LocalDate fromDate, LocalDate toDate, Integer minutesAgo) {
-
-//   Instant fromInstant = null;
-//   Instant toInstant = null;
-
-//   if (fromDate != null && toDate != null) {
-//       Instant startOfFrom = fromDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
-//       Instant startOfTo = toDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
-
-//       fromInstant = startOfFrom.isBefore(startOfTo) ? startOfFrom : startOfTo;
-//       toInstant = startOfFrom.isBefore(startOfTo) ? startOfTo : startOfFrom;
-
-//       toInstant = toInstant.plus(1, ChronoUnit.DAYS);
-//   } else if (minutesAgo > 0) {
-//       Instant currentInstant = Instant.now();
-//       Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
-
-//       Instant startOfCurrentDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
-
-//       if (minutesAgoInstant.isBefore(startOfCurrentDay)) {
-//           fromInstant = startOfCurrentDay;
-//       } else {
-//           fromInstant = minutesAgoInstant;
-//       }
-
-//       toInstant = currentInstant;
-//   } else {
-//       throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
-//   }
-
-//   PanacheQuery<TraceDTO> panacheQuery = TraceDTO.find(
-//       "statusCode >= :minStatusCode and statusCode <= :maxStatusCode " +
-//       "and duration >= :minDuration and duration <= :maxDuration " +
-//       "and serviceName in :serviceNames and methodName in :methodNames " +
-//       "and createdTime >= :fromDate and createdTime <= :toDate",
-//       Parameters
-//           .with("minStatusCode", Optional.ofNullable(query.getStatusCode()).map(status -> status.get(0).getMin()).orElse(null))
-//           .and("maxStatusCode", Optional.ofNullable(query.getStatusCode()).map(status -> status.get(0).getMax()).orElse(null))
-//           .and("minDuration", Optional.ofNullable(query.getDuration()).map(duration -> duration.getMin()).orElse(null))
-//           .and("maxDuration", Optional.ofNullable(query.getDuration()).map(duration -> duration.getMax()).orElse(null))
-//           .and("serviceNames", Optional.ofNullable(query.getServiceName()).orElse(null))
-//           .and("methodNames", Optional.ofNullable(query.getMethodName()).orElse(null))
-//           .and("fromDate", Optional.ofNullable(fromInstant).map(Date::from).orElse(null))
-//           .and("toDate", Optional.ofNullable(toInstant).map(Date::from).orElse(null)));
-
-//   return panacheQuery.list();
-// }
 
 
 // filter Sort by created time in descending order
