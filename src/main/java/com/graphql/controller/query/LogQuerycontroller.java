@@ -241,7 +241,7 @@ public LogPage filterLogs(
 
 
 @Query
-public List<LogDTO> searchFunction(@Name("keyword") String keyword, 
+public LogPage searchFunction(@Name("keyword") String keyword, 
 @Name("page") int page,
         @Name("pageSize") int pageSize,
          @Name("from") LocalDate fromDate,

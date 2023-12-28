@@ -21,6 +21,7 @@ import com.graphql.entity.otellog.ScopeLogs;
 import com.graphql.entity.otellog.scopeLogs.LogRecord;
 import com.graphql.entity.queryentity.log.LogDTO;
 import com.graphql.entity.queryentity.log.LogMetrics;
+import com.graphql.entity.queryentity.log.LogPage;
 import com.graphql.entity.queryentity.log.LogQuery;
 import com.graphql.repo.query.LogQueryRepo;
 import com.mongodb.client.MongoClient;
@@ -67,7 +68,7 @@ public class LogQueryHandler {
 
 
 
- public List<LogDTO>  searchFunction(String keyword,int page, int pageSize, LocalDate fromDate, LocalDate toDate, Integer minutesAgo ){
+ public LogPage  searchFunction(String keyword,int page, int pageSize, LocalDate fromDate, LocalDate toDate, Integer minutesAgo ){
         return logQueryRepo.searchFunction(keyword, page, pageSize, fromDate, toDate, minutesAgo);
     }
 
