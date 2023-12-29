@@ -253,13 +253,13 @@ public LogPage searchFunction(@Name("keyword") String keyword,
 
 @Query
 public List<LogMetrics> logMetricsCount(
-    @Name("startDate") LocalDate startDate,
-    @Name("endDate") LocalDate endDate,
+    @Name("from") LocalDate fromDate,
+    @Name("to") LocalDate toDate,
     @Name("serviceNameList") List<String> serviceNameList,
     @Name("minutesAgo") int minutesAgo
 ) {
     // Assuming logQueryHandler has a method similar to getLogMetricCount
-    return logQueryHandler.getLogMetricCount(minutesAgo, startDate, endDate, serviceNameList);
+    return logQueryHandler.getLogMetricCount(minutesAgo, fromDate, toDate, serviceNameList);
 }
 
 @Query
