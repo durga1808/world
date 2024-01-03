@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -13,12 +14,15 @@ import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Name;
 import org.eclipse.microprofile.graphql.Query;
 
+import com.graphql.entity.oteltrace.scopeSpans.Spans;
+import com.graphql.entity.queryentity.log.LogDTO;
 import com.graphql.entity.queryentity.trace.DBMetric;
 import com.graphql.entity.queryentity.trace.KafkaMetrics;
 import com.graphql.entity.queryentity.trace.TraceDTO;
 import com.graphql.entity.queryentity.trace.TraceMetrics;
 import com.graphql.entity.queryentity.trace.TracePage;
 import com.graphql.entity.queryentity.trace.TraceQuery;
+import com.graphql.entity.queryentity.trace.TraceSpanDTO;
 import com.graphql.handler.query.TraceQueryHandler;
 import com.graphql.repo.query.TraceQueryRepo;
 
@@ -240,6 +244,79 @@ public TracePage traceFilter(
     List<TraceDTO> paginatedTraces = traceList.subList(startIdx, endIdx);
 
     return new TracePage(paginatedTraces, totalCount);
+}
+
+
+
+@Query
+public  List<TraceSpanDTO>  findByTraceId(@Name("traceId") String traceId) {
+        if (traceId == null || traceId.isEmpty()) {
+            // Handle bad request, for example, throw an exception or return an empty list
+            return Collections.emptyList();
+        }
+    
+        List<TraceDTO> data = traceQueryRepo.find("traceId = ?1", traceId).list();
+    
+        if (data.isEmpty()) {
+            // Handle not found, for example, throw an exception or return an empty list
+            return Collections.emptyList();
+        }
+    
+        List<TraceDTO> dto;
+        if (data.size() > 1) {
+            dto = traceQueryHandler.mergeTraces(data);
+        } else {
+            dto = data;
+            for (TraceDTO trace : dto) {
+                List<Spans> orderedSpanData = traceQueryHandler.sortingParentChildOrder(trace.getSpans());
+                trace.setSpans(orderedSpanData);
+            }
+        }
+    
+        for (TraceDTO trace : dto) {
+            for (Spans span : trace.getSpans()) {
+                // Uncomment the following lines if you want to print the span details
+                // System.out.println(
+                //     "Span ID: " + span.getSpanId() + ", Parent Span ID: " + span.getParentSpanId() + ", Name: "
+                //             + span.getName());
+            }
+        }
+    
+        List<TraceSpanDTO> traceSpanDTO = traceQueryHandler.getModifiedTraceSpanDTO(dto);
+    
+        // Return the List<TraceSpanDTO> directly if TraceSpanDTO is a subtype of TraceDTO
+        return traceSpanDTO;
+    }
+
+
+
+    @Query
+    public List<LogDTO> findByTraceErrorTraceId(@Name("traceId") String traceId) {
+    if (traceId == null || traceId.isEmpty()) {
+        // Handle bad request, for example, throw an exception or return an empty list
+        return Collections.emptyList();
+    }
+
+    List<TraceDTO> data = traceQueryRepo.find("traceId = ?1", traceId).list();
+
+    if (data.isEmpty()) {
+        // Handle not found, for example, throw an exception or return an empty list
+        return Collections.emptyList();
+    }
+
+    for (TraceDTO trace : data) {
+        for (Spans span : trace.getSpans()) {
+            // Uncomment the following lines if you want to print the span details
+            // System.out.println(
+            //     "Span ID: " + span.getSpanId() + ", Parent Span ID: " + span.getParentSpanId() + ", Name: "
+            //             + span.getName());
+        }
+    }
+
+    List<LogDTO> logDTOs = traceQueryHandler.getErroredLogDTO(data);
+
+    // Return the List<LogDTO> directly
+    return logDTOs;
 }
 
 }

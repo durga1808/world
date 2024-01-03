@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -28,6 +29,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -325,6 +327,24 @@ public LogPage sortOrderLogs(
 
 
 
+
+@Query
+public List<LogDTO> findLogsByTraceId(@Name("traceId") String traceId) {
+    if (traceId == null || traceId.isEmpty()) {
+        // Handle bad request, for example, throw an exception or return an empty list
+        return Collections.emptyList();
+    }
+
+    List<LogDTO> data = logQueryRepo.find("traceId=?1", traceId).list();
+
+    if (data.isEmpty()) {
+        // Return an empty list if no LogDTO is found
+        return Collections.emptyList();
+    }
+
+    // Return the List<LogDTO> directly
+    return data;
+}
 
 
 }

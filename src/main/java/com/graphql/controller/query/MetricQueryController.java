@@ -28,7 +28,8 @@ public class MetricQueryController {
 
 
     @Query
-      public List<MetricDTO> metricDataByServiceName(@Name("serviceName") String serviceName,
+      public List<MetricDTO> metricDataByServiceName(
+        @Name("serviceName") String serviceName,
         @Name("from") LocalDate fromDate,
         @Name("to") LocalDate toDate,
         @Name("minutesAgo") Integer minutesAgo) {
