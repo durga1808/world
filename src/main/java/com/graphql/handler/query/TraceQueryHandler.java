@@ -121,7 +121,7 @@ public class TraceQueryHandler {
 
         filters.add(Filters.in("statusCode", statusCodeList));
     }
-    
+
   if (query.getDuration() != null && query.getDuration().getMin() != null && query.getDuration().getMax() != null) {
     filters.add(Filters.gte("duration", query.getDuration().getMin()));
     filters.add(Filters.lte("duration", query.getDuration().getMax()));
@@ -140,33 +140,6 @@ public class TraceQueryHandler {
   return result;
 }
     
-//    public List<TraceDTO> getTracesByStatusCodeAndDuration(TraceQuery query, int page, int pageSize) {
-//     PanacheQuery<TraceDTO> panacheQuery = TraceDTO.find(
-//             "statusCode >= :minStatusCode and statusCode <= :maxStatusCode " +
-//                     "and duration >= :minDuration and duration <= :maxDuration " +
-//                     "and serviceName in :serviceNames and methodName in :methodNames",
-//             Parameters
-//                     .with("minStatusCode", query.getStatusCode().get(0).getMin())
-//                     .and("maxStatusCode", query.getStatusCode().get(0).getMax())
-//                     .and("minDuration", query.getDuration().getMin())
-//                     .and("maxDuration", query.getDuration().getMax())
-//                     .and("serviceNames", query.getServiceName())
-//                     .and("methodNames", query.getMethodName()));
-
-//     List<TraceDTO> results = panacheQuery.page(Page.of(page, pageSize)).list();
-
-//     return results.stream()
-//             .filter(trace ->
-//                     trace.getStatusCode() >= query.getStatusCode().get(0).getMin() &&
-//                             trace.getStatusCode() <= query.getStatusCode().get(0).getMax() &&
-//                             trace.getDuration() >= query.getDuration().getMin() &&
-//                             trace.getDuration() <= query.getDuration().getMax() &&
-//                             query.getServiceName().contains(trace.getServiceName()) &&
-//                             query.getMethodName().contains(trace.getMethodName()))
-//             .collect(Collectors.toList());
-// }
-
-
 
 // sort order decending
 public List<TraceDTO> getAllTracesOrderByCreatedTimeDesc(List<String> serviceNameList) {
@@ -221,64 +194,6 @@ public List<TraceDTO> findAllOrderByDuration(List<String> serviceNameList) {
 }
 
 
-
-
-public List<TraceDTO> getTracesByStatusCodeAndDuration(TraceQuery query, LocalDate fromDate, LocalDate toDate, Integer minutesAgo) {
-
-    Instant fromInstant = null;
-    Instant toInstant = null;
-
-    if (fromDate != null && toDate != null) {
-        Instant startOfFrom = fromDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
-        Instant startOfTo = toDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
-
-        fromInstant = startOfFrom.isBefore(startOfTo) ? startOfFrom : startOfTo;
-        toInstant = startOfFrom.isBefore(startOfTo) ? startOfTo : startOfFrom;
-
-        toInstant = toInstant.plus(1, ChronoUnit.DAYS);
-    } else if (minutesAgo > 0) {
-        Instant currentInstant = Instant.now();
-        Instant minutesAgoInstant = currentInstant.minus(minutesAgo, ChronoUnit.MINUTES);
-
-        // Calculate the start of the current day
-        Instant startOfCurrentDay = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant();
-
-        if (minutesAgoInstant.isBefore(startOfCurrentDay)) {
-            fromInstant = startOfCurrentDay;
-        } else {
-            fromInstant = minutesAgoInstant;
-        }
-
-        toInstant = currentInstant;
-    } else {
-        throw new IllegalArgumentException("Either date range or minutesAgo must be provided");
-    }
-
-    PanacheQuery<TraceDTO> panacheQuery = TraceDTO.find(
-            "statusCode >= :minStatusCode and statusCode <= :maxStatusCode " +
-                    "and duration >= :minDuration and duration <= :maxDuration " +
-                    "and serviceName in :serviceNames and methodName in :methodNames " +
-                    "and createdTime >= :fromDate and createdTime <= :toDate",
-            Parameters
-                    .with("minStatusCode", Optional.ofNullable(query.getStatusCode())
-                            .map(statusCode -> statusCode.get(0).getMin()).orElse(null))
-                    .and("maxStatusCode", Optional.ofNullable(query.getStatusCode())
-                            .map(statusCode -> statusCode.get(0).getMax()).orElse(null))
-                    .and("minDuration", Optional.ofNullable(query.getDuration())
-                            .map(duration -> duration.getMin()).orElse(null))
-                    .and("maxDuration", Optional.ofNullable(query.getDuration())
-                            .map(duration -> duration.getMax()).orElse(null))
-                    .and("serviceNames", Optional.ofNullable(query.getServiceName()).orElse(Collections.emptyList()))
-                    .and("methodNames", Optional.ofNullable(query.getMethodName()).orElse(Collections.emptyList()))
-                    .and("fromDate", Optional.ofNullable(fromInstant).map(Date::from).orElse(null))
-                    .and("toDate", Optional.ofNullable(toInstant).map(Date::from).orElse(null)));
-
-    return panacheQuery.list().stream()
-            .filter(trace ->
-                    trace.getStatusCode() >= Optional.ofNullable(query.getStatusCode())
-                            .map(statusCode -> statusCode.get(0).getMin()).orElse((long) 0))
-            .collect(Collectors.toList());
-}
 
 
 
