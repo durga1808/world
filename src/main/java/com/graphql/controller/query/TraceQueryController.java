@@ -27,7 +27,7 @@ import com.graphql.handler.query.TraceQueryHandler;
 import com.graphql.repo.query.TraceQueryRepo;
 
 import jakarta.inject.Inject;
-import jakarta.ws.rs.QueryParam;
+
 
 
 @GraphQLApi

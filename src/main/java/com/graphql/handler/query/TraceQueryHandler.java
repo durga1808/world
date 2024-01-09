@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -112,6 +113,19 @@ public class TraceQueryHandler {
   } else if (query.getMethodName() != null) {
       filters.add(Filters.in("methodName", query.getMethodName()));
   }
+
+ if (query.getStatusCode() != null && !query.getStatusCode().isEmpty()) {
+        List<Long> statusCodeList = query.getStatusCode().stream()
+                .flatMap(range -> LongStream.rangeClosed(range.getMin(), range.getMax()).boxed())
+                .collect(Collectors.toList());
+
+        filters.add(Filters.in("statusCode", statusCodeList));
+    }
+    
+  if (query.getDuration() != null && query.getDuration().getMin() != null && query.getDuration().getMax() != null) {
+    filters.add(Filters.gte("duration", query.getDuration().getMin()));
+    filters.add(Filters.lte("duration", query.getDuration().getMax()));
+}
 
   filters.add(Filters.gte("createdTime", fromInstant));
   filters.add(Filters.lte("createdTime", toInstant));
