@@ -110,7 +110,9 @@ public class TraceQueryHandler {
 
   if (query.getServiceName() != null) {
       filters.add(Filters.in("serviceName", query.getServiceName()));
-  } else if (query.getMethodName() != null) {
+  } 
+  
+  if (query.getMethodName() != null) {
       filters.add(Filters.in("methodName", query.getMethodName()));
   }
 
