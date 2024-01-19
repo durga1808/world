@@ -231,6 +231,14 @@ public LogPage filterLogs(
                 throw new IllegalArgumentException("Invalid sortOrder parameter. Use 'new', 'old', or 'error'.");
             }
 
+            // Additional filtering based on severityText
+            if (query.getSeverityText() != null) {
+                logDTOs = logDTOs.stream()
+                        .filter(logDTO -> query.getSeverityText().contains(logDTO.getSeverityText()))
+                        .collect(Collectors.toList());
+            }
+            
+
         int totalCount = logDTOs.size();
         int startIdx = (page - 1) * pageSize;
     int endIdx = Math.min(startIdx + pageSize,  logDTOs.size());
